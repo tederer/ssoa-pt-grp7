@@ -6,17 +6,18 @@ var cpuCores            = 1
 var memoryInGb          = 1
 var restartPolicy       = 'Always'
 var gitRepoUrl          = 'https://github.com/tederer/ssoa-pt-grp7.git'
+var serviceNames        = ['webserver', 'products']
 
-resource webserverContainerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01' = {
-  name: 'webserver'
+resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01' = [for serviceName in serviceNames: {
+  name: serviceName
   location: location
   properties: {
     containers: [
       {
-        name: 'webserver-container'
+        name: '${serviceName}-container'
         properties: {
           image: image
-          command: [ '/mnt/ssoa-pt-grp7/startService.sh', 'webserver' ] 
+          command: [ '/mnt/ssoa-pt-grp7/startService.sh', '${serviceName}' ] 
           ports: [
             {
               port: port
@@ -48,7 +49,7 @@ resource webserverContainerGroup 'Microsoft.ContainerInstance/containerGroups@20
     restartPolicy: restartPolicy
     ipAddress: {
       type: 'Public'
-      dnsNameLabel: 'ssoaptgrp7-webserver'
+      dnsNameLabel: 'ssoaptgrp7-${serviceName}'
       ports: [
         {
           port: port
@@ -65,6 +66,4 @@ resource webserverContainerGroup 'Microsoft.ContainerInstance/containerGroups@20
       }
     ]
   }
-}
-
-output containerIPv4Address string = webserverContainerGroup.properties.ipAddress.ip
+}]

@@ -1,6 +1,6 @@
 /* global webshop, process */
-require('./logging/LoggingSystem.js');
-require('./Version.js');
+require('../../common/src/logging/LoggingSystem.js');
+require('../../common/src/Version.js');
 
 var fs 						 = require('fs');
 var express 				 = require('express');
