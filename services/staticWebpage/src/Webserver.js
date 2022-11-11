@@ -4,7 +4,6 @@ require('./Version.js');
 
 var fs 						 = require('fs');
 var express 				 = require('express');
-var https					 = require('https');
 var path                 = require('node:path');
 
 var LOGGER 					 = webshop.logging.LoggingSystem.createLogger('Webserver');
@@ -52,7 +51,7 @@ var handleFileRequests = function handleFileRequests(request, response) {
 	var requestedDocumentUrl  = request.url;
 	var absolutePathOfRequest = webRootFolder + requestedDocumentUrl;
 	
-	LOGGER.logInfo('request for ' + requestedDocumentUrl);
+	LOGGER.logDebug('request (url=' + requestedDocumentUrl + ',absolutePath=' + absolutePathOfRequest);
 
 	if (absolutePathOfRequest.endsWith('/')) {
 		absolutePathOfRequest += DEFAULT_INDEX_FILE;
@@ -62,7 +61,7 @@ var handleFileRequests = function handleFileRequests(request, response) {
 		LOGGER.logInfo(absolutePathOfRequest + ' does not exist -> sending internal server error');
 		sendInternalServerError(response, requestedDocumentUrl + ' does not exist');
 	} else {
-		LOGGER.logInfo('returning ' + absolutePathOfRequest);
+		LOGGER.logDebug('returning ' + absolutePathOfRequest);
 		response.sendFile(absolutePathOfRequest);
 	}
 };
