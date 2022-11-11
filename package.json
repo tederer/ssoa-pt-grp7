@@ -1,0 +1,29 @@
+{
+   "name": "ssoa-report-group7",
+   "version": "0.1.0",
+   "description": "SSOA-PT report group 7",
+   "private": true,
+   "author": {
+      "name": "Group7",
+      "email": "group7@fh-burgenland.at"
+   },
+   "licenses": [
+      {
+         "type": "MIT"
+      }
+   ],
+   "dependencies": {
+      "express": "4.x"
+   },
+   "devDependencies": {
+      "grunt": "1.x",
+      "mocha": "10.x",
+      "expect.js": "0.x",
+      "grunt-contrib-clean": "2.x",
+      "grunt-contrib-jshint": "3.x",
+      "grunt-mocha-test": "0.x"
+   },
+   "engines": {
+      "node": ">=18.12.1"
+   }
+}
