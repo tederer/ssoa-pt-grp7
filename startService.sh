@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 scriptDir=$(cd $(dirname $0) && pwd)
 serviceName=$1
@@ -16,7 +16,7 @@ if [ $exitCode -ne 0 ]; then
    echo "ERROR: service \"$serviceName\" does not exist in config file"
    exit 1
 fi
-serviceExecutable=$(echo $serviceConfig | cut --delimiter='=' --fields=2)
+serviceExecutable=$(echo $serviceConfig | cut -d '=' -f 2)
 
 if [ ! -d ./node_modules ]; then
    npm install
