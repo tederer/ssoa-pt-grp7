@@ -1,21 +1,19 @@
 param location string
 
-param containerGroupName string = 'services'
-param containerName string      = 'webserver'
-param image string              = 'node:lts-alpine'
-param port int                  = 80
-param cpuCores int              = 1
-param memoryInGb int            = 1
-param restartPolicy string      = 'Always'
-param gitRepoUrl string         = 'https://github.com/tederer/ssoa-pt-grp7.git'
+var image               = 'node:lts-alpine'
+var port                = 80
+var cpuCores            = 1
+var memoryInGb          = 1
+var restartPolicy       = 'Always'
+var gitRepoUrl          = 'https://github.com/tederer/ssoa-pt-grp7.git'
 
-resource windsensorContainerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01' = {
-  name: containerGroupName
+resource webserverContainerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01' = {
+  name: 'webserver'
   location: location
   properties: {
     containers: [
       {
-        name: containerName
+        name: 'webserver-container'
         properties: {
           image: image
           command: [ '/mnt/ssoa-pt-grp7/startService.sh', 'webserver' ] 
@@ -37,6 +35,12 @@ resource windsensorContainerGroup 'Microsoft.ContainerInstance/containerGroups@2
               mountPath: '/mnt'
             }
           ]
+          environmentVariables:[
+            {
+              name:  'LOG_LEVEL'
+              value: 'INFO'
+            } 
+          ]
         }
       }
     ]
@@ -44,6 +48,7 @@ resource windsensorContainerGroup 'Microsoft.ContainerInstance/containerGroups@2
     restartPolicy: restartPolicy
     ipAddress: {
       type: 'Public'
+      dnsNameLabel: 'ssoaptgrp7-webserver'
       ports: [
         {
           port: port
@@ -62,4 +67,4 @@ resource windsensorContainerGroup 'Microsoft.ContainerInstance/containerGroups@2
   }
 }
 
-output containerIPv4Address string = windsensorContainerGroup.properties.ipAddress.ip
+output containerIPv4Address string = webserverContainerGroup.properties.ipAddress.ip

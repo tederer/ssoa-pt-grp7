@@ -32,7 +32,7 @@ if (typeof info.version === 'string') {
 }
 
 var logRequest = function logRequest(request,response, next) {
-	LOGGER.logDebug(() => '\nREQUEST for "' + request.url + '" received');
+	LOGGER.logDebug('request for "' + request.url + '" received');
 	next();
 };
  
