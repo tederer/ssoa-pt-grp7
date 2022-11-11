@@ -51,14 +51,14 @@ var handleFileRequests = function handleFileRequests(request, response) {
 	var requestedDocumentUrl  = request.url;
 	var absolutePathOfRequest = webRootFolder + requestedDocumentUrl;
 	
-	LOGGER.logDebug('request (url=' + requestedDocumentUrl + ',absolutePath=' + absolutePathOfRequest);
+	LOGGER.logDebug('request (url=' + requestedDocumentUrl + ',absolutePath=' + absolutePathOfRequest + ')');
 
 	if (absolutePathOfRequest.endsWith('/')) {
 		absolutePathOfRequest += DEFAULT_INDEX_FILE;
 	} 
 	
-	if (!fs.existsSync(absolutePathOfRequest)) {   
-		LOGGER.logInfo(absolutePathOfRequest + ' does not exist -> sending internal server error');
+	if (!fs.existsSync(absolutePathOfRequest)) {  
+		LOGGER.logInfo('requested file \"' + requestedDocumentUrl + '\" does not exist -> sending internal server error (absolutePathOfRequest=' + absolutePathOfRequest + ')'); 
 		sendInternalServerError(response, requestedDocumentUrl + ' does not exist');
 	} else {
 		LOGGER.logDebug('returning ' + absolutePathOfRequest);
