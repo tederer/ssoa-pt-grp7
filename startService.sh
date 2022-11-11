@@ -9,6 +9,7 @@ if [ "$serviceName" == "" ]; then
 fi
 
 cd "$scriptDir"
+
 serviceConfig=$(grep "${serviceName}=" services.cfg)
 exitCode=$?
 if [ $exitCode -ne 0 ]; then
@@ -16,5 +17,9 @@ if [ $exitCode -ne 0 ]; then
    exit 1
 fi
 serviceExecutable=$(echo $serviceConfig | cut --delimiter='=' --fields=2)
+
+if [ ! -d ./node_modules ]; then
+   npm install
+fi
 
 node $serviceExecutable
