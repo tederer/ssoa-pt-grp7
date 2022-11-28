@@ -2,6 +2,7 @@
 
 require('../NamespaceUtils.js');
 require('./Logger.js');
+require('./LoggingSystem.js');
 
 assertNamespace('webshop.logging');
 
@@ -9,7 +10,6 @@ assertNamespace('webshop.logging');
  * ConsoleLogger writes the log output to the console.
  */
 webshop.logging.ConsoleLogger = function ConsoleLogger(name, minLogLevel) {
-   
    var MESSAGE_SEPARATOR = ';';
    var logLevel = minLogLevel;
 

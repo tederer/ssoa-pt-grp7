@@ -15,8 +15,9 @@ webshop.logging.Level = {
 
 var LoggingSystemImpl = function LoggingSystemImpl() {
 
-   var logLevel = webshop.logging.Level.WARNING;
    var loggers = [];
+
+   this.logLevel = webshop.logging.Level.INFO;
 
    this.setMinLogLevel = function setMinLogLevel(level) {
       this.logLevel = level;
