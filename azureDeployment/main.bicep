@@ -18,7 +18,6 @@ module vnet 'vnet.bicep' = {
   }
 }
 
-/* TODO
 module database 'database.bicep' = {
   scope: resourceGroup
   name: 'mongoDB-database'
@@ -26,7 +25,7 @@ module database 'database.bicep' = {
     location: location
     databaseName: databaseName
   }
-}*/
+}
 
 module services 'services.bicep' = {
   scope: resourceGroup
@@ -35,8 +34,7 @@ module services 'services.bicep' = {
     location:     location
     databaseName: databaseName
   }
-//  dependsOn:[database, vnet]
-  dependsOn:[vnet]
+  dependsOn:[vnet, database]
 }
 
 module apiGateway 'apiGateway.bicep' = {

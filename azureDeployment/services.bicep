@@ -7,14 +7,12 @@ var cpuCores            = 1
 var memoryInGb          = 1
 var restartPolicy       = 'Always'
 var gitRepoUrl          = 'https://github.com/tederer/ssoa-pt-grp7.git'
-var serviceNames        = ['webserver', 'products']
+var serviceNames        = ['webserver', 'products', 'orders', 'customers']
 
-/** TODO
 resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2022-05-15' existing = {
   scope: resourceGroup()
   name: 'db-account-for-ssoa-pt-grp7'
 }
-*/
 
 resource vnetSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
   scope: resourceGroup()
@@ -54,13 +52,17 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01'
               name:   'LOG_LEVEL'
               value:  'INFO'
             } 
-            /*{ TODO
+            {
               name:   'DATABASE_CONNECTION_STRING'
               value:  databaseAccount.listConnectionStrings().connectionStrings[0].connectionString
-            }*/
+            }
             {
               name:   'DATABASE_NAME'
               value:  databaseName
+            }
+            {
+              name:   'ACTIVATE_SWAGGER'
+              value:  'true'
             }
           ]
         }
@@ -91,4 +93,5 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01'
       }
     ]
   }
+  dependsOn:[vnetSubnet]
 }]

@@ -1,6 +1,6 @@
 param location     string
 
-var name = 'API-gateway'
+var name         = 'API-gateway'
 
 resource vnetSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
   scope: resourceGroup()
@@ -15,6 +15,16 @@ resource webserverService 'Microsoft.ContainerInstance/containerGroups@2021-10-0
 resource productsService 'Microsoft.ContainerInstance/containerGroups@2021-10-01' existing = {
   scope: resourceGroup()
   name: 'products-service'
+}
+
+resource ordersService 'Microsoft.ContainerInstance/containerGroups@2021-10-01' existing = {
+  scope: resourceGroup()
+  name: 'orders-service'
+}
+
+resource customersService 'Microsoft.ContainerInstance/containerGroups@2021-10-01' existing = {
+  scope: resourceGroup()
+  name: 'customers-service'
 }
 
 resource publicIpAddress 'Microsoft.Network/publicIpAddresses@2020-08-01' = {
@@ -86,6 +96,26 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
           ]
         }
       }
+      {
+        name: 'ordersBackendPool'
+        properties:{
+          backendAddresses:[
+            {
+              ipAddress: ordersService.properties.ipAddress.ip
+            }
+          ]
+        }
+      }
+      {
+        name: 'customersBackendPool'
+        properties:{
+          backendAddresses:[
+            {
+              ipAddress: customersService.properties.ipAddress.ip
+            }
+          ]
+        }
+      }
     ]
      probes:[
       {
@@ -138,6 +168,32 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
            }
         }
       }
+      {
+        name: 'ordersBackendHTTPSetting'
+        properties: {
+          port: 80
+          protocol: 'Http'
+          cookieBasedAffinity: 'Disabled'
+          pickHostNameFromBackendAddress: false
+          requestTimeout: 20
+           probe: {
+             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'productsProbe')
+           }
+        }
+      }
+      {
+        name: 'customersBackendHTTPSetting'
+        properties: {
+          port: 80
+          protocol: 'Http'
+          cookieBasedAffinity: 'Disabled'
+          pickHostNameFromBackendAddress: false
+          requestTimeout: 20
+           probe: {
+             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'productsProbe')
+           }
+        }
+      }
     ]
     httpListeners: [
       {
@@ -177,6 +233,30 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
                 }      
               }
             }
+            {
+              name: 'ordersPathRule'
+              properties:{
+                paths:['/orders/*']
+                backendAddressPool: {
+                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'ordersBackendPool')
+                }
+                backendHttpSettings: {
+                  id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'ordersBackendHTTPSetting')
+                }      
+              }
+            }
+            {
+              name: 'customersPathRule'
+              properties:{
+                paths:['/customers/*']
+                backendAddressPool: {
+                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'customersBackendPool')
+                }
+                backendHttpSettings: {
+                  id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'customersBackendHTTPSetting')
+                }      
+              }
+            }
           ]
         }
       }
@@ -197,3 +277,5 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
     ]
   }
 }
+
+output ipAddress string = publicIpAddress.properties.ipAddress
