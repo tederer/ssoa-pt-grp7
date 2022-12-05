@@ -1,4 +1,4 @@
-/* global assertNamespace, webshop */
+/* global assertNamespace, webshop, __dirname */
 
 assertNamespace('webshop');
 

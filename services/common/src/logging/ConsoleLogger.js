@@ -36,16 +36,16 @@ webshop.logging.ConsoleLogger = function ConsoleLogger(name, minLogLevel) {
    this.logDebug = function logDebug(messageOrSupplier) {
       log(webshop.logging.Level.DEBUG, messageOrSupplier);
    };
-	
-	this.logInfo = function logInfo(messageOrSupplier) {
+   
+   this.logInfo = function logInfo(messageOrSupplier) {
       log(webshop.logging.Level.INFO, messageOrSupplier);
    };
-	
-	this.logWarning = function logWarning(messageOrSupplier) {
+   
+   this.logWarning = function logWarning(messageOrSupplier) {
       log(webshop.logging.Level.WARNING, messageOrSupplier);
    };
-	
-	this.logError = function logError(messageOrSupplier) {
+   
+   this.logError = function logError(messageOrSupplier) {
       log(webshop.logging.Level.ERROR, messageOrSupplier);
    };
 };

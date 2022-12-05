@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: Product Service
+  description: |-
+    This service provides all necessary methods for managing products.
+  version: 0.1.0
+paths:
+  /product:
+    post:
+      summary: create a new product
+      description: Returns the product ID
+      operationId: createProduct
+      requestBody:
+        description: Adds a new product
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idempotencyKey:
+                  type: string
+                  example: 'eerr-ddfr-2232'
+                name:
+                  type: string
+                  example: 'Sonnenblume'
+                price:
+                  description: price per piece
+                  type: number
+                  example: 4.5
+                quantity:
+                  description: number of available pieces
+                  type: integer
+                  example: 15
+ 
+      responses:
+        '200':
+          description: The product was added or was already there.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  productId:
+                    type: string
+                example:
+                  - productId: "1234ed2"
+                  
+        '400':
+          description: Cannot accept the product.
+    
+  /product/byid/{productId}:        
+    get:
+      summary: get product by ID
+      description: Returns the corresponding product object.
+      operationId: getProductById
+      parameters: 
+        - name: productId
+          in: path
+          description: ID of the product
+          required: true
+          schema:
+            type: string
+            
+      responses:
+        '200':
+          description: The corresponding product.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  idempotencyKey:
+                    type: string
+                    example: 'eerr-ddfr-2232'
+                  name:
+                    type: string
+                    example: 'Sonnenblume'
+                  price:
+                    description: price per piece
+                    type: number
+                    example: 4.5
+                  quantity:
+                    description: number of available pieces
+                    type: integer
+                    example: 15
+        
+        '400': 
+          description: product not found  
+    
+  /product/info:
+    get:
+      summary: get service related informations
+      description: Returns the version, url path prefix and startup time of the service. This path is also used to satifsy the health probe of the Azure Application Gateway.
+      operationId: getServiceInfo
+      responses:
+        '200':
+          description: An object containing the version and start time of the service.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  pathPrefix:
+                    type: string
+                  start:
+                    type: string
+                example:
+                  - version: "1.0.0"
+                    pathPrefix: '/product'
+                    start: "2022-11-28T18:21:34.846Z"
+        
+  

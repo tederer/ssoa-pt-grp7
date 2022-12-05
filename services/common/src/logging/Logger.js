@@ -13,26 +13,26 @@ assertNamespace('webshop.logging');
 webshop.logging.Logger = function Logger() {
    
    var createErrorFor = function createErrorFor(functionName) {
-		return new Error('implementation of webshop.logging.Logger did not implement the method \"' + functionName + '\"');
-	};
+      return new Error('implementation of webshop.logging.Logger did not implement the method \"' + functionName + '\"');
+   };
    
    this.setMinLogLevel = function setMinLogLevel(level) {
       throw createErrorFor('setMinLogLevel');
    };
 
-	this.logDebug = function logDebug(messageOrSupplier) {
+   this.logDebug = function logDebug(messageOrSupplier) {
       throw createErrorFor('logDebug');
    };
-	
-	this.logInfo = function logInfo(messageOrSupplier) {
+   
+   this.logInfo = function logInfo(messageOrSupplier) {
       throw createErrorFor('logInfo');
    };
-	
-	this.logWarning = function logWarning(messageOrSupplier) {
+   
+   this.logWarning = function logWarning(messageOrSupplier) {
       throw createErrorFor('logWarning');
    };
-	
-	this.logError = function logError(messageOrSupplier) {
+   
+   this.logError = function logError(messageOrSupplier) {
       throw createErrorFor('logError');
    };
 };

@@ -16,7 +16,10 @@ module.exports = function(grunt) {
             options: {
                jshintrc: '.jshintrc'
             },
-            src: jsFiles
+            src: jsFiles,
+            filter: function(filepath) { 
+               return !filepath.endsWith('swagger-initializer.js'); 
+            }
          }
       },
 

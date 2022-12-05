@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Customer Service
+  description: |-
+    This service provides all necessary methods for creating and managing customers.
+  version: 0.1.0
+paths:
+  /customer:
+    post:
+      summary: create a new customer
+      description: Returns the customer ID.
+      operationId: createCustomer
+      requestBody:
+        description: create a new customer
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idempotencyKey:
+                  type: string
+                  example: 'eerr-ddfr-2232'
+                firstname:
+                  type: string
+                  example: 'Max'
+                lastname:
+                  type: string
+                  example: 'Mustermann'
+ 
+      responses:
+        '200':
+          description: The customer ID.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orderId:
+                    type: string
+                example:
+                  - customerId: "1234ed2"
+                  
+        '400':
+          description: Cannot accept the customer.
+    
+  /customer/byid/{customerId}:        
+    get:
+      summary: get customer by ID
+      description: Returns the corresponding customer object.
+      operationId: getCustomerById
+      parameters: 
+        - name: customerId
+          in: path
+          description: ID of the customer
+          required: true
+          schema:
+            type: string
+            
+      responses:
+        '200':
+          description: The corresponding customer.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  firstname:
+                    type: string
+                    example: 'Max'
+                  lastname:
+                    type: string
+                    example: 'Mustermann'
+        
+        '400': 
+          description: customer not found  
+    
+  /customer/info:
+    get:
+      summary: get service related informations
+      description: Returns the version, url path prefix and startup time of the service. This path is also used to satifsy the health probe of the Azure Application Gateway.
+      operationId: getServiceInfo
+      responses:
+        '200':
+          description: An object containing the version and start time of the service.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  pathPrefix:
+                    type: string
+                  start:
+                    type: string
+                example:
+                  - version: "1.0.0"
+                    pathPrefix: '/product'
+                    start: "2022-11-28T18:21:34.846Z"
+        
+  
+  
