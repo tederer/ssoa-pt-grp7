@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# using /bin/sh because alpine docker images does not support /bin/bash
+# using /bin/sh because the alpine docker image does not support /bin/bash
 
 cd $(dirname $0)
 scriptDir=$(pwd)
