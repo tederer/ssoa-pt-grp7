@@ -24,6 +24,7 @@ webshop.Webserver = function Webserver(settings, initializationFunction) {
    var swaggerClientInitScript   = 'swagger-initializer.js';
    var openApiYamlFilename       = 'openapi.yaml';
    var webserverPort             = process.env.WEBSERVER_PORT ?? DEFAULT_PORT;
+   var activateSwagger           = process.env.ACTIVATE_SWAGGER === 'true';
    var app                       = express();
    var openApiYamlUrlPath        = settings.pathPrefix + '/' + openApiYamlFilename;
    var swaggerInitScriptPath     = __dirname + '/' + swaggerClientInitScript;
@@ -61,23 +62,27 @@ webshop.Webserver = function Webserver(settings, initializationFunction) {
       response.status(200).json(info);
    });
 
-   app.get(openApiYamlUrlPath, (request, response) => {
-      var path = request.path;
-      logGetRequest(path);
-      response.status(200).sendFile(settings.rootFolderPath + '/' + openApiYamlFilename);
-   });
+   if (activateSwagger) {
+      LOGGER.logInfo('swagger UI available at ' + settings.pathPrefix + '/swagger');
+      
+      app.get(openApiYamlUrlPath, (request, response) => {
+         var path = request.path;
+         logGetRequest(path);
+         response.status(200).sendFile(settings.rootFolderPath + '/' + openApiYamlFilename);
+      });
 
-   app.get(settings.pathPrefix + '/swagger/' + swaggerClientInitScript, (request, response) => {
-      var path = request.path;
-      logGetRequest(path);
-      if (swaggerInitScriptContent) {
-         response.status(200).type('application/javascript').send(swaggerInitScriptContent);
-      } else {
-         response.status(500);
-      }
-   });
+      app.get(settings.pathPrefix + '/swagger/' + swaggerClientInitScript, (request, response) => {
+         var path = request.path;
+         logGetRequest(path);
+         if (swaggerInitScriptContent) {
+            response.status(200).type('application/javascript').send(swaggerInitScriptContent);
+         } else {
+            response.status(500);
+         }
+      });
 
-   app.use(settings.pathPrefix + '/swagger', express.static(pathToSwaggerUi));
+      app.use(settings.pathPrefix + '/swagger', express.static(pathToSwaggerUi));
+   };
 
    initializationFunction(app, LOGGER);
    
