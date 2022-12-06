@@ -22,6 +22,7 @@ LOGGER.logInfo('log level = ' + logLevel.description);
 
 var info = {
     version:    webshop.getVersion(),
+    pathPrefix: '/',
     start:      (new Date()).toISOString()
 };
 

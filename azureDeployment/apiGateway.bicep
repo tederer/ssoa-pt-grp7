@@ -77,7 +77,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
     ]
     backendAddressPools:[
       {
-        name: 'webserverBackendPool'
+        name: 'webserverPool'
         properties:{
           backendAddresses:[
             {
@@ -87,7 +87,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         }
       }
       {
-        name: 'productsBackendPool'
+        name: 'productPool'
         properties:{
           backendAddresses:[
             {
@@ -97,7 +97,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         }
       }
       {
-        name: 'ordersBackendPool'
+        name: 'orderPool'
         properties:{
           backendAddresses:[
             {
@@ -107,7 +107,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         }
       }
       {
-        name: 'customersBackendPool'
+        name: 'customerPool'
         properties:{
           backendAddresses:[
             {
@@ -130,11 +130,33 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         }
       }
       {
-        name: 'productsProbe'
+        name: 'productProbe'
         properties:{
           protocol:'Http'
           host: productsService.properties.ipAddress.ip
-          path: '/info'
+          path: '/product/info'
+          interval: 30
+          timeout: 30
+          unhealthyThreshold: 3
+        }
+      }
+      {
+        name: 'orderProbe'
+        properties:{
+          protocol:'Http'
+          host: productsService.properties.ipAddress.ip
+          path: '/order/info'
+          interval: 30
+          timeout: 30
+          unhealthyThreshold: 3
+        }
+      }
+      {
+        name: 'customerProbe'
+        properties:{
+          protocol:'Http'
+          host: productsService.properties.ipAddress.ip
+          path: '/customer/info'
           interval: 30
           timeout: 30
           unhealthyThreshold: 3
@@ -164,7 +186,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
           pickHostNameFromBackendAddress: false
           requestTimeout: 20
            probe: {
-             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'productsProbe')
+             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'productProbe')
            }
         }
       }
@@ -177,7 +199,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
           pickHostNameFromBackendAddress: false
           requestTimeout: 20
            probe: {
-             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'productsProbe')
+             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'orderProbe')
            }
         }
       }
@@ -190,7 +212,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
           pickHostNameFromBackendAddress: false
           requestTimeout: 20
            probe: {
-             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'productsProbe')
+             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'customerProbe')
            }
         }
       }
@@ -218,15 +240,15 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
             id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'webserverBackendHTTPSetting')
           }
           defaultBackendAddressPool: {
-            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'webserverBackendPool')
+            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'webserverPool')
           }
           pathRules:[
             {
               name: 'productsPathRule'
               properties:{
-                paths:['/products/*']
+                paths:['/product/*']
                 backendAddressPool: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'productsBackendPool')
+                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'productPool')
                 }
                 backendHttpSettings: {
                   id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'productsBackendHTTPSetting')
@@ -236,9 +258,9 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
             {
               name: 'ordersPathRule'
               properties:{
-                paths:['/orders/*']
+                paths:['/order/*']
                 backendAddressPool: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'ordersBackendPool')
+                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'orderPool')
                 }
                 backendHttpSettings: {
                   id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'ordersBackendHTTPSetting')
@@ -248,9 +270,9 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
             {
               name: 'customersPathRule'
               properties:{
-                paths:['/customers/*']
+                paths:['/customer/*']
                 backendAddressPool: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'customersBackendPool')
+                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'customerPool')
                 }
                 backendHttpSettings: {
                   id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'customersBackendHTTPSetting')
@@ -277,5 +299,3 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
     ]
   }
 }
-
-output ipAddress string = publicIpAddress.properties.ipAddress
