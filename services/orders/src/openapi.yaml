@@ -20,6 +20,9 @@ paths:
                 idempotencyKey:
                   type: string
                   example: 'eerr-ddfr-2232'
+                customerId:
+                  type: string
+                  example: 'sde43'
                 cartContent:
                   type: array
                   items: 

@@ -32,4 +32,5 @@ if test ! -d ./node_modules ; then
    npm install
 fi
 
+export ACTIVATE_SWAGGER=true
 node $scriptDir/$serviceExecutable

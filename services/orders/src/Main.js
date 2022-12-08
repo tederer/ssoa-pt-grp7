@@ -2,15 +2,29 @@
 
 require('../../common/src/logging/LoggingSystem.js');
 require('../../common/src/webserver/Webserver.js');
+require('./Service.js');
 
-var DEFAULT_LOG_LEVEL = 'INFO';
-var LOGGER            = webshop.logging.LoggingSystem.createLogger('Webserver');
-var logLevel          = webshop.logging.Level[process.env.LOG_LEVEL ?? DEFAULT_LOG_LEVEL];
-var pathPrefix        = '/order';
+var DEFAULT_LOG_LEVEL   = 'INFO';
+var HTTP_OK             = 200;
+var HTTP_ERROR          = 400;
+var LOGGER              = webshop.logging.LoggingSystem.createLogger('Webserver');
+var logLevel            = webshop.logging.Level[process.env.LOG_LEVEL ?? DEFAULT_LOG_LEVEL];
+var pathPrefix          = '/order';
+var version             = webshop.getVersion();
 
 webshop.logging.LoggingSystem.setMinLogLevel(logLevel);
 
+var info = {
+   version:    (typeof version === 'string') ? version : 'not available',
+   pathPrefix: pathPrefix,
+   start:      (new Date()).toISOString()
+};
+
+LOGGER.logInfo('version = ' + info.version);
 LOGGER.logInfo('log level = ' + logLevel.description);
+LOGGER.logInfo('pathPrefix = ' + pathPrefix);
+   
+var service = new webshop.orders.Service();
 
 var initializationFunction = function initializationFunction(app, webserverLogger) {
    app.get(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
@@ -22,17 +36,20 @@ var initializationFunction = function initializationFunction(app, webserverLogge
    });
 
    app.post(pathPrefix, (request, response) => {
-      var path = request.path;
-      var data = request.body;
-      webserverLogger.logDebug('POST request [path: ' + path + ']');
-      // TODO implement creation of order
-      response.status(200).json({ id: 'foo'});
+      webserverLogger.logDebug('POST request [path: ' + request.path + ']');
+      service.createOrder(request.body)
+         .then(result => response.status(HTTP_OK).json(result))
+         .catch(error => {
+            webserverLogger.logError(error);
+            response.status(HTTP_ERROR);
+         });
    });
 };
 
 var settings = {
-   pathPrefix: pathPrefix, 
-   rootFolderPath: __dirname
+   pathPrefix:       pathPrefix, 
+   rootFolderPath:   __dirname,
+   info:             info
 };
 
 webshop.Webserver(settings, initializationFunction);

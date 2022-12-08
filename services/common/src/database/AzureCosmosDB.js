@@ -1,4 +1,4 @@
-/* global assertNamespace, webshop */
+/* global assertNamespace, webshop, process */
 
 require('./Database.js');
 require('../NamespaceUtils.js');
@@ -6,58 +6,93 @@ require('../logging/LoggingSystem.js');
 
 assertNamespace('webshop.database');
 
-webshop.database.AzureCosmosDB = function AzureCosmosDB(connectionUri, databaseName) {
+webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
 	
-   var mongodb = require('mongodb');
-   var LOGGER = webshop.logging.LoggingSystem.createLogger('AzureCosmosDB');
+   var mongodb          = require('mongodb');
+   var LOGGER           = webshop.logging.LoggingSystem.createLogger('AzureCosmosDB');
+   var connected        = false;
+   var connectionString = process.env.DATABASE_CONNECTION_STRING;
    var mongoClient;
-	var connected = false;
+	var database;
 
-   var resolvedPromise = function resolvedPromise() {
-      return new Promise((resolve, reject) => resolve());
-   };
-
-   this.insert = function insert(collectionName, document) {
-      if (connected) {
-         LOGGER.logInfo('inserting into collection "' + collectionName + '": ' + JSON.stringify(document));
-         return mongoClient.db(databaseName).collection(collectionName).insertOne(document);
-      }
-   };
-
-   this.open = function open() {
+   var assertConnected = function assertConnected(operationName) {
       if (!connected) {
-         return new Promise((resolve, reject) => {
-            LOGGER.logInfo('opening connection to database ...');
-            mongoClient = new mongodb.MongoClient(connectionUri);
-            mongoClient.connect()
-               .then(() => {
-                  connected = true;
-                  LOGGER.logInfo('connection established');
-                  resolve();
-               })
-               .catch(e => reject(e));
-         });
-      } else {
-         LOGGER.logDebug('ignoring request to open database because it\'s already connected');
-         return resolvedPromise();
+         throw 'not connected to database -> cannot execute ' + operationName + 'operation';
       }
    };
 
-   this.close = function close() {
+   this.insert = async function insert(collectionName, document) {
+      LOGGER.logInfo('inserting into collection "' + collectionName + '": ' + JSON.stringify(document));
+      assertConnected('insert');
+      return await database.collection(collectionName).insertOne(document);
+   };
+
+   this.findOne = async function findOne(collectionName, query) {
+      LOGGER.logInfo('find one document in collection "' + collectionName + '" (query=' + JSON.stringify(query) + ')');
+      assertConnected('findOne');
+      return await database.collection(collectionName).findOne(query);
+   };
+
+   this.executeAsTransaction = async function executeAsTransaction(operations) {
       if (connected) {
-         return new Promise((resolve, reject) => {
-            LOGGER.logInfo('closing database ...');
-            return mongoClient.close()
-               .then(() => {
-                  connected = false;
-                  LOGGER.logInfo('connection closed');
-                  resolve();
-               })
-               .catch( e => reject(e));
-         });
+         var transactionOptions = {
+            readConcern:      { level: 'snapshot' },
+            writeConcern:     { w: 'majority' },
+            readPreference:   'primary'
+         };
+
+         var session = mongoClient.startSession();
+         var error;
+         var result;
+
+         try {
+            session.startTransaction(transactionOptions);
+            result = await operations(this);
+            await session.commitTransaction();
+         } catch(e) {
+            error = e;
+            await session.abortTransaction();
+         } finally {
+            await session.endSession();
+         }
+
+         if (error !== undefined) {
+            throw error;
+         }
+
+         return result;
+      }
+   };
+
+   this.open = async function open() {
+      if (!connected) {
+         if (typeof connectionString !== 'string' || connectionString.length <= 0) {
+            throw {message: 'invalid connection string "' + connectionString + '"', tryAgain: false};
+         } 
+
+         LOGGER.logInfo('connecting to database ...');
+         
+         try {
+            mongoClient = new mongodb.MongoClient(connectionString);
+            await mongoClient.connect();
+            database = mongoClient.db(databaseName);
+            connected = true;
+            LOGGER.logInfo('connection established');
+            return this;
+         } catch(e) {
+            throw {message: 'failed to open connection: ' + e, tryAgain: true};
+         }
+      }
+   };
+
+   this.close = async function close() {
+      if (connected) {
+         LOGGER.logInfo('closing database ...');
+         await mongoClient.close();
+         connected = false;
+         LOGGER.logInfo('connection closed');
       } else {
          LOGGER.logDebug('ignoring request to close database because it\'s already disconnected');
-         return resolvedPromise();
       }
    };
 };

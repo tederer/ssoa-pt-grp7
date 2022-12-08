@@ -36,30 +36,16 @@ webshop.Webserver = function Webserver(settings, initializationFunction) {
       LOGGER.logError('failed to read content of ' + swaggerInitScriptPath + ': ' + e);
    }
 
-   var info = {
-      version:    webshop.getVersion(),
-      pathPrefix: settings.pathPrefix,
-      start:      (new Date()).toISOString()
-   };
-
-   if (typeof info.version === 'string') {
-      LOGGER.logInfo('version = ' + info.version);
-   } else {
-      LOGGER.logError('failed to evaluate version: ' + info.version.message);
-   }
-   
-   LOGGER.logInfo('pathPrefix = ' + settings.pathPrefix);
-   
    var logGetRequest = function logGetRequest(path) {
       LOGGER.logDebug('GET request [path: ' + path + ']');
    };
    
-   app.use(bodyParser.text({ type: 'application/json' })); // makes JSON data (sent in HTTP header) available in request.body
+   app.use(bodyParser.json({ type: 'application/json' })); // makes JSON data (sent in HTTP header) available in request.body
 
    app.get(settings.pathPrefix + '/info', (request, response) => {
       var path = request.path;
       logGetRequest(path);
-      response.status(200).json(info);
+      response.status(200).json(settings.info);
    });
 
    if (activateSwagger) {
@@ -82,7 +68,7 @@ webshop.Webserver = function Webserver(settings, initializationFunction) {
       });
 
       app.use(settings.pathPrefix + '/swagger', express.static(pathToSwaggerUi));
-   };
+   }
 
    initializationFunction(app, LOGGER);
    

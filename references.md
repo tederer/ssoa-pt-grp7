@@ -10,3 +10,4 @@ https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/connect-account
 https://mongodb.github.io/node-mongodb-native/3.6/api/
 https://www.mongodb.com/blog/post/quick-start-nodejs-mongodb-how-to-get-connected-to-your-database
 https://www.mongodb.com/docs/drivers/node/current/
+https://www.mongodb.com/docs/drivers/node/current/fundamentals/transactions/

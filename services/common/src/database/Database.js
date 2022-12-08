@@ -15,7 +15,7 @@ webshop.database.Database = function Database() {
     * 
     * returns a Promise
     */
-   this.open = function open() {
+   this.open = async function open() {
       throw createErrorFor('insert');
    };
 
@@ -24,7 +24,7 @@ webshop.database.Database = function Database() {
     * 
     * returns a Promise
     */
-   this.close = function close() {
+   this.close = async function close() {
       throw createErrorFor('close');
    };
    
@@ -33,8 +33,25 @@ webshop.database.Database = function Database() {
     * 
     * returns a Promise
     */
-    this.insert = function insert(collectionName, document) {
+   this.insert = async function insert(collectionName, document) {
       throw createErrorFor('insert');
    };
+
+   /**
+    * Fetches the first document that matches the query.
+    * 
+    * returns a Promise
+    */
+   this.findOne = async function findOne(collectionName, query) {
+      throw createErrorFor('findOne');
+   };
+
+   /**
+    * Executes the provided operations as a transaction. operations is a function receiving the database instance.
+    * 
+    * returns a Promise
+    */
+   this.executeAsTransaction = async function executeAsTransaction(operations) {
+      throw createErrorFor('findOne');
+   };
 };
- 
