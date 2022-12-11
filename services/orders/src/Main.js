@@ -25,59 +25,12 @@ LOGGER.logInfo('version = ' + info.version);
 LOGGER.logInfo('log level = ' + logLevel.description);
 LOGGER.logInfo('pathPrefix = ' + pathPrefix);
    
-var service = new webshop.orders.Service();
+var logRequest = function logRequest(request) {
+   LOGGER.logDebug(request.method + ' request [path: ' + request.path + ']');
+};
 
-var initializationFunction = function initializationFunction(app) {
-   app.post(pathPrefix, (request, response) => {
-      LOGGER.logDebug('POST request [path: ' + request.path + ']');
-      
-      service.createOrder(request.body)
-         .then(result => response.status(HTTP_OK).json(result))
-         .catch(error => {
-            LOGGER.logError(error);
-            response.status(HTTP_BAD_REQUEST).end();
-         });
-   });
-
-   app.get(pathPrefix, (request, response) => {
-      LOGGER.logDebug('GET request [path: ' + request.path + ']');
-      
-      service.getOrderIds()
-         .then(result => response.status(HTTP_OK).json(result))
-         .catch(error => {
-            LOGGER.logError(error);
-            response.status(HTTP_BAD_REQUEST).end();
-         });
-   });
-
-   app.get(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
-      var path    = request.path;
-      var orderId = path.substring(path.lastIndexOf('/') + 1);
-      LOGGER.logDebug('GET request [path: ' + path + ']');
-      
-      service.getOrder(orderId)
-         .then(result => response.status(HTTP_OK).json(result))
-         .catch(error => {
-            LOGGER.logError(error);
-            response.status(HTTP_NOT_FOUND).end();
-         });
-   });
-
-   app.delete(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
-      var path    = request.path;
-      var orderId = path.substring(path.lastIndexOf('/') + 1);
-      LOGGER.logDebug('DELETE request [path: ' + path + ']');
-      
-      service.deleteOrder(orderId)
-         .then(result => {
-            var statusCode = (result.deletedCount > 0) ? HTTP_OK : HTTP_NOT_FOUND;
-            response.status(statusCode).end();
-         })
-         .catch(error => {
-            LOGGER.logError(error);
-            response.status(HTTP_BAD_REQUEST).end();
-         });
-   });
+var getOrderId = function getOrderId(request) {
+   return request.path.substring(request.path.lastIndexOf('/') + 1);
 };
 
 var settings = {
@@ -86,4 +39,61 @@ var settings = {
    info:             info
 };
 
-webshop.Webserver(settings, initializationFunction);
+var startup = async function startup() {
+   var service = new webshop.orders.Service();
+   
+   await service.start();
+
+   webshop.Webserver(settings, app => {
+      app.post(pathPrefix, (request, response) => {
+         logRequest(request);
+         
+         service.createOrder(request.body)
+            .then(result => response.status(HTTP_OK).json(result))
+            .catch(error => {
+               LOGGER.logError(error);
+               response.status(HTTP_BAD_REQUEST).end();
+            });
+      });
+
+      app.get(pathPrefix, (request, response) => {
+         logRequest(request);
+         
+         service.getOrderIds()
+            .then(result => response.status(HTTP_OK).json(result))
+            .catch(error => {
+               LOGGER.logError(error);
+               response.status(HTTP_BAD_REQUEST).end();
+            });
+      });
+
+      app.get(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
+         logRequest(request);
+         var orderId = getOrderId(request);
+         
+         service.getOrder(orderId)
+            .then(result => response.status(HTTP_OK).json(result))
+            .catch(error => {
+               LOGGER.logError(error);
+               response.status(HTTP_NOT_FOUND).end();
+            });
+      });
+
+      app.delete(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
+         logRequest(request);
+         var orderId = getOrderId(request);
+         
+         service.deleteOrder(orderId)
+            .then(result => {
+               var statusCode = (result.deletedCount > 0) ? HTTP_OK : HTTP_NOT_FOUND;
+               response.status(statusCode).end();
+            })
+            .catch(error => {
+               LOGGER.logError(error);
+               response.status(HTTP_BAD_REQUEST).end();
+            });
+      });
+   });
+};
+
+startup();

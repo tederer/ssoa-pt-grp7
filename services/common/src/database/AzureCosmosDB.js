@@ -10,14 +10,13 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
 	
    var mongodb          = require('mongodb');
    var LOGGER           = webshop.logging.LoggingSystem.createLogger('AzureCosmosDB');
-   var connected        = false;
    var connectionString = process.env.DATABASE_CONNECTION_STRING;
    var mongoClient;
 	var database;
-
+   
    var assertConnected = function assertConnected(operationName) {
-      if (!connected) {
-         throw 'not connected to database -> cannot execute ' + operationName + 'operation';
+      if (mongoClient === undefined) {
+         throw 'not connected to database -> cannot execute \"' + operationName + '\" operation';
       }
    };
 
@@ -46,49 +45,47 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
    };
 
    this.executeAsTransaction = async function executeAsTransaction(operations) {
-      if (connected) {
-         var transactionOptions = {
-            readConcern:      { level: 'snapshot' },
-            writeConcern:     { w: 'majority' },
-            readPreference:   'primary'
-         };
+      assertConnected('executeAsTransaction');
 
-         var session = mongoClient.startSession();
-         var error;
-         var result;
+      var transactionOptions = {
+         readConcern:      { level: 'snapshot' },
+         writeConcern:     { w: 'majority' },
+         readPreference:   'primary'
+      };
 
-         try {
-            session.startTransaction(transactionOptions);
-            result = await operations(this);
-            await session.commitTransaction();
-         } catch(e) {
-            error = e;
-            await session.abortTransaction();
-         } finally {
-            await session.endSession();
-         }
+      var session = mongoClient.startSession();
+      var error;
+      var result;
 
-         if (error !== undefined) {
-            throw error;
-         }
-
-         return result;
+      try {
+         session.startTransaction(transactionOptions);
+         result = await operations(this);
+         await session.commitTransaction();
+      } catch(e) {
+         error = e;
+         await session.abortTransaction();
+      } finally {
+         await session.endSession();
       }
+
+      if (error !== undefined) {
+         throw error;
+      }
+
+      return result;
    };
 
    this.open = async function open() {
-      if (!connected) {
+      if (mongoClient === undefined) {
          if (typeof connectionString !== 'string' || connectionString.length <= 0) {
             throw {message: 'invalid connection string "' + connectionString + '"', tryAgain: false};
          } 
 
-         LOGGER.logInfo('connecting to database ...');
+         LOGGER.logInfo('connecting to database \"' + databaseName + '\"...');
          
          try {
-            mongoClient = new mongodb.MongoClient(connectionString);
-            await mongoClient.connect();
-            database = mongoClient.db(databaseName);
-            connected = true;
+            mongoClient = await (new mongodb.MongoClient(connectionString)).connect();
+            database    = mongoClient.db(databaseName);
             LOGGER.logInfo('connection established');
             return this;
          } catch(e) {
@@ -98,10 +95,11 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
    };
 
    this.close = async function close() {
-      if (connected) {
+      if (mongoClient !== undefined) {
          LOGGER.logInfo('closing database ...');
          await mongoClient.close();
-         connected = false;
+         mongoClient = undefined;
+         database    = undefined;
          LOGGER.logInfo('connection closed');
       }
    };
