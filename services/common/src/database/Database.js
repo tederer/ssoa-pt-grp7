@@ -47,6 +47,24 @@ webshop.database.Database = function Database() {
    };
 
    /**
+    * Deletes the first document that matches the query.
+    * 
+    * returns a Promise
+    */
+   this.deleteOne = async function deleteOne(collectionName, query) {
+      throw createErrorFor('deleteOne');
+   };
+
+   /**
+    * Queries the IDs of all documents in the corresponding collection.
+    * 
+    * returns a Promise
+    */
+   this.getAllIds = async function getAllIds(collectionName) {
+      throw createErrorFor('getAllIds');
+   };
+
+   /**
     * Executes the provided operations as a transaction. operations is a function receiving the database instance.
     * 
     * returns a Promise

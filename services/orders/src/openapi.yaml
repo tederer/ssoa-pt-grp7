@@ -63,7 +63,27 @@ paths:
                   
         '400':
           description: Cannot accept the order.
-    
+
+    get:
+      summary: get list of order IDs
+      description: Returns a list containing the ID of each order
+      operationId: getOrderIds
+            
+      responses:
+        '200':
+          description: The list containing the ID of each order
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  type: object
+                  properties:
+                    orderId: 
+                      type: string
+                  example:
+                    - orderId: '123e4'
+                  
   /order/byid/{orderId}:        
     get:
       summary: get order by ID
@@ -101,7 +121,29 @@ paths:
                       - productId: '123e4'
                         quantity: 5
         
+        '404': 
+          description: order not found  
+    
+    delete:
+      summary: delete order
+      description: deletes the corresponding order object.
+      operationId: deleteOrder
+      parameters: 
+        - name: orderId
+          in: path
+          description: ID of the order
+          required: true
+          schema:
+            type: string
+            
+      responses:
+        '200':
+          description: The corresponding order was deleted.
+
         '400': 
+          description: bad request  
+
+        '404': 
           description: order not found  
     
   /order/info:

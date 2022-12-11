@@ -24,13 +24,25 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
    this.insert = async function insert(collectionName, document) {
       LOGGER.logInfo('inserting into collection "' + collectionName + '": ' + JSON.stringify(document));
       assertConnected('insert');
-      return await database.collection(collectionName).insertOne(document);
+      return database.collection(collectionName).insertOne(document);
    };
 
    this.findOne = async function findOne(collectionName, query) {
       LOGGER.logInfo('find one document in collection "' + collectionName + '" (query=' + JSON.stringify(query) + ')');
       assertConnected('findOne');
-      return await database.collection(collectionName).findOne(query);
+      return database.collection(collectionName).findOne(query);
+   };
+
+   this.deleteOne = async function deleteOne(collectionName, query) {
+      LOGGER.logInfo('delete one document in collection "' + collectionName + '" (query=' + JSON.stringify(query) + ')');
+      assertConnected('findOne');
+      return database.collection(collectionName).deleteOne(query);
+   };
+
+   this.getAllIds = async function getAllIds(collectionName) {
+      LOGGER.logInfo('return all IDs in collection "' + collectionName + '"');
+      assertConnected('getAllIds');
+      return database.collection(collectionName).find().map(doc => doc._id.toString()).toArray();
    };
 
    this.executeAsTransaction = async function executeAsTransaction(operations) {
@@ -91,8 +103,6 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
          await mongoClient.close();
          connected = false;
          LOGGER.logInfo('connection closed');
-      } else {
-         LOGGER.logDebug('ignoring request to close database because it\'s already disconnected');
       }
    };
 };

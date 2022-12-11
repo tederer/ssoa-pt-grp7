@@ -27,6 +27,6 @@
       "grunt-mocha-test": "0.x"
    },
    "engines": {
-      "node": ">=18.12.1"
+      "node": ">=18.x"
    }
 }

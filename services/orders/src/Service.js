@@ -1,6 +1,7 @@
 /* global webshop, assertNamespace, setTimeout */
 
 const { request } = require('express');
+const { ObjectId } = require('mongodb');
 
 require('../../common/src/NamespaceUtils.js');
 require('../../common/src/logging/LoggingSystem.js');
@@ -77,14 +78,50 @@ webshop.orders.Service = function Service() {
       };
    };
 
-   this.createOrder = function createOrder(requestData) {
+   var getOrderIfItExists = function getOrderIfItExists(orderId) {
+      return async function(db) {
+         try {
+            var foundRecord = await db.findOne(COLLECTION_NAME, {_id: ObjectId(orderId)});
+            if (foundRecord !== null) {
+               return foundRecord;
+            } else {
+               throw 'no order exists with id \"' + orderId + '\"';
+            }
+         } catch(e) {
+            throw 'failed to get order: ' + e;
+         }
+      };
+   };
+
+   this.createOrder = async function createOrder(requestData) {
       LOGGER.logInfo('createOrder (requestData=' + JSON.stringify(requestData) + ')');
       
-      if (!isValid(requestData)) {
-         return Promise.reject('invalid request data');
-      } 
-      
-      return database.executeAsTransaction(createOrderIfItDoesNotExist(requestData));
+      if (isValid(requestData)) {
+         return database.executeAsTransaction(createOrderIfItDoesNotExist(requestData));
+      } else {
+         throw 'invalid request data';
+      }     
+   };
+
+   this.getOrderIds = async function getOrderIds() {
+      LOGGER.logInfo('getOrderIds');
+      return database.getAllIds(COLLECTION_NAME);
+   };
+
+   this.getOrder = async function getOrder(orderId) {
+      if ((typeof orderId === 'string') && (orderId.length > 0)) {
+         return database.executeAsTransaction(getOrderIfItExists(orderId));
+      } else {
+         throw 'invalid orderId \"' + orderId + '\"';
+      }
+   };
+
+   this.deleteOrder = async function deleteOrder(orderId) {
+      if ((typeof orderId === 'string') && (orderId.length > 0)) {
+         return database.deleteOne(COLLECTION_NAME, {_id: ObjectId(orderId)}); // no transaction required because CRUD-operations are atomic in MongoDB
+      } else {
+         throw 'invalid orderId \"' + orderId + '\"';
+      }
    };
 
    openDatabase();

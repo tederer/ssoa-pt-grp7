@@ -25,7 +25,7 @@ webshop.logging.ConsoleLogger = function ConsoleLogger(name, minLogLevel) {
       if (level.value >= logLevel.value) {
          var timestamp = (new Date()).toISOString();
          var message = typeof messageOrSupplier === 'function' ? messageOrSupplier() : messageOrSupplier;
-         console.log([timestamp, name, level.description, message].join(MESSAGE_SEPARATOR));
+         console.log([timestamp, level.description, name, message].join(MESSAGE_SEPARATOR));
       }
    };
 

@@ -9,7 +9,7 @@ assertNamespace('webshop');
  * constructor function of a webserver
  * pathPrefix              the prefix of the path in the URL starting with a slash
  * initializationFunction  this function gets called before the webserver starts listening 
- *                         and it receiving the Express app object and the logger 
+ *                         and it receiving the Express app object
  */
 webshop.Webserver = function Webserver(settings, initializationFunction) {
 
@@ -70,7 +70,7 @@ webshop.Webserver = function Webserver(settings, initializationFunction) {
       app.use(settings.pathPrefix + '/swagger', express.static(pathToSwaggerUi));
    }
 
-   initializationFunction(app, LOGGER);
+   initializationFunction(app);
    
    app.listen(webserverPort, () => {
       LOGGER.logInfo('web server listening on port ' + webserverPort);
