@@ -1,11 +1,13 @@
 /* global webshop, assertNamespace, setTimeout, process */
 
-const { request } = require('express');
+const { request }  = require('express');
 const { ObjectId } = require('mongodb');
 
 require('../../common/src/NamespaceUtils.js');
 require('../../common/src/logging/LoggingSystem.js');
 require('../../common/src/database/AzureCosmosDB.js');
+require('./States.js');
+require('./OrderWorker.js');
 
 assertNamespace('webshop.orders');
 
@@ -13,7 +15,8 @@ webshop.orders.Service = function Service() {
 
    const LOGGER            = webshop.logging.LoggingSystem.createLogger('Service');
    const COLLECTION_NAME   = 'orders';
-   const STATES            = ['PENDING', 'APPROVED'];
+   const STATES            = webshop.orders.States;
+
    var database;
 
    var assertDatabaseConnected = function assertDatabaseConnected() {
@@ -28,27 +31,22 @@ webshop.orders.Service = function Service() {
       } 
    };
 
-   var cartContentIsValid = function cartContentIsValid(cartContent) {
-      var valid = true;
-      cartContent.forEach(product => {
-       valid = valid                                  &&
-            (typeof product.productId === 'string')   &&
-            (product.productId.length > 0)            &&
-            (typeof product.quantity === 'number')    &&
-            (product.quantity > 0);
-      });
-      return valid;
-   };
-
    var assertValidRequestData = function assertValidRequestData(requestData) {
       var isValid =  (requestData !== undefined)                        &&
                      (typeof requestData.idempotencyKey === 'string')   &&
                      (requestData.idempotencyKey.length > 0)            &&
                      (typeof requestData.customerId === 'string')       &&
                      (requestData.customerId.length > 0)                &&
-                     (typeof requestData.cartContent === typeof([]))    &&
-                     cartContentIsValid(requestData.cartContent);
+                     (typeof requestData.cartContent === typeof([]));
       
+      requestData.cartContent.forEach(content => {
+         isValid  =  isValid                                            &&
+                     (typeof content.productId === 'string')            &&
+                     (content.productId.length > 0)                     &&
+                     (typeof content.quantity === 'number')             &&
+                     (content.quantity > 0);
+      });
+                 
       if(!isValid) {
          throw 'invalid request data';
       }
@@ -59,7 +57,7 @@ webshop.orders.Service = function Service() {
          idempotencyKey:   requestData.idempotencyKey, 
          customerId:       requestData.customerId, 
          cartContent:      [],
-         state:            STATES[0],
+         state:            STATES.new.toString(),
          lastModification: Date.now()
       };
       requestData.cartContent.forEach(content => {
@@ -75,9 +73,9 @@ webshop.orders.Service = function Service() {
             if (foundRecord !== null) {
                return {orderId: foundRecord._id.toString()};
             } else {
-               var document      = createOrderDocument(requestData);
-               var insertResult  = await db.insert(COLLECTION_NAME, document);
-               return {orderId: insertResult.insertedId};
+               var document   = createOrderDocument(requestData);
+               var id         = await db.insert(COLLECTION_NAME, document);
+               return {orderId: id};
             }
          } catch(e) {
             throw 'failed to create order with idempotencyKey \"' + requestData.idempotencyKey + '\": ' + e;
@@ -106,31 +104,32 @@ webshop.orders.Service = function Service() {
 
    this.start = async function start() {
       database = await(new webshop.database.AzureCosmosDB('orders')).open();
+      new webshop.orders.OrderWorker(database, COLLECTION_NAME);
    };
 
    this.createOrder = async function createOrder(requestData) {
-      LOGGER.logInfo('createOrder (requestData=' + JSON.stringify(requestData) + ')');
+      LOGGER.logDebug('create order (requestData=' + JSON.stringify(requestData) + ')');
       assertDatabaseConnected();
       assertValidRequestData(requestData);
       return database.executeAsTransaction(createOrderIfItDoesNotExist(requestData));
    };
 
    this.getOrder = async function getOrder(orderId) {
-      LOGGER.logInfo('getOrder (id=' + orderId + ')');
+      LOGGER.logDebug('get order (id=' + orderId + ')');
       assertDatabaseConnected();
       assertValidOrderId(orderId);
       return database.executeAsTransaction(getOrderIfItExists(orderId));
    };
 
    this.deleteOrder = async function deleteOrder(orderId) {
-      LOGGER.logInfo('deleteOrder (id=' + orderId + ')');
+      LOGGER.logDebug('delete order (id=' + orderId + ')');
       assertDatabaseConnected();
       assertValidOrderId(orderId);
       return database.deleteOne(COLLECTION_NAME, {_id: ObjectId(orderId)}); // no transaction required because CRUD-operations are atomic in MongoDB
    };
 
    this.getOrderIds = async function getOrderIds() {
-      LOGGER.logInfo('getOrderIds');
+      LOGGER.logDebug('get order IDs');
       assertDatabaseConnected();
       return database.executeAsTransaction(findAllIds);
    };

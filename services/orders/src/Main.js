@@ -4,22 +4,28 @@ require('../../common/src/logging/LoggingSystem.js');
 require('../../common/src/webserver/Webserver.js');
 require('./Service.js');
 
-var DEFAULT_LOG_LEVEL   = 'INFO';
-var HTTP_OK             = 200;
-var HTTP_BAD_REQUEST    = 400;
-var HTTP_NOT_FOUND      = 404;
-var LOGGER              = webshop.logging.LoggingSystem.createLogger('Main');
-var logLevel            = webshop.logging.Level[process.env.LOG_LEVEL ?? DEFAULT_LOG_LEVEL];
-var pathPrefix          = '/order';
-var version             = webshop.getVersion();
+const DEFAULT_LOG_LEVEL = 'INFO';
+const HTTP_OK           = 200;
+const HTTP_BAD_REQUEST  = 400;
+const HTTP_NOT_FOUND    = 404;
+const LOGGER            = webshop.logging.LoggingSystem.createLogger('Main');
+const logLevel          = webshop.logging.Level[process.env.LOG_LEVEL ?? DEFAULT_LOG_LEVEL];
+const pathPrefix        = '/order';
+const version           = webshop.getVersion();
 
-webshop.logging.LoggingSystem.setMinLogLevel(logLevel);
-
-var info = {
+const info = {
    version:    (typeof version === 'string') ? version : 'not available',
    pathPrefix: pathPrefix,
    start:      (new Date()).toISOString()
 };
+
+const webserverSettings = {
+   pathPrefix:       pathPrefix, 
+   rootFolderPath:   __dirname,
+   info:             info
+};
+
+webshop.logging.LoggingSystem.setMinLogLevel(logLevel);
 
 LOGGER.logInfo('version = ' + info.version);
 LOGGER.logInfo('log level = ' + logLevel.description);
@@ -33,23 +39,25 @@ var getOrderId = function getOrderId(request) {
    return request.path.substring(request.path.lastIndexOf('/') + 1);
 };
 
-var settings = {
-   pathPrefix:       pathPrefix, 
-   rootFolderPath:   __dirname,
-   info:             info
-};
-
 var startup = async function startup() {
    var service = new webshop.orders.Service();
    
-   await service.start();
+   try {
+      await service.start();
+   } catch(error) {
+      LOGGER.logError("failed to start service: " + error);
+      process.exit(1);
+   }
 
-   webshop.Webserver(settings, app => {
+   webshop.Webserver(webserverSettings, app => {
       app.post(pathPrefix, (request, response) => {
          logRequest(request);
          
          service.createOrder(request.body)
-            .then(result => response.status(HTTP_OK).json(result))
+            .then(result => {
+               LOGGER.logInfo('created order ' + result.orderId);
+               response.status(HTTP_OK).json(result);
+            })
             .catch(error => {
                LOGGER.logError(error);
                response.status(HTTP_BAD_REQUEST).end();
@@ -84,8 +92,11 @@ var startup = async function startup() {
          var orderId = getOrderId(request);
          
          service.deleteOrder(orderId)
-            .then(result => {
-               var statusCode = (result.deletedCount > 0) ? HTTP_OK : HTTP_NOT_FOUND;
+            .then(deletedCount => {
+               if (deletedCount > 0) {
+                  LOGGER.logInfo('deleted order ' + orderId);
+               }
+               var statusCode = (deletedCount > 0) ? HTTP_OK : HTTP_NOT_FOUND;
                response.status(statusCode).end();
             })
             .catch(error => {
