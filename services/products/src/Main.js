@@ -35,4 +35,4 @@ var settings = {
    rootFolderPath: __dirname
 };
 
-webshop.Webserver(settings, initializationFunction);
+webshop.webserver.Webserver(settings, initializationFunction);

@@ -93,5 +93,4 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01'
       }
     ]
   }
-  dependsOn:[vnetSubnet]
 }]

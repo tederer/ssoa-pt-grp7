@@ -26,6 +26,9 @@ paths:
                 lastname:
                   type: string
                   example: 'Mustermann'
+                credit:
+                  type: number
+                  example: 500
  
       responses:
         '200':
@@ -42,7 +45,22 @@ paths:
                   
         '400':
           description: Cannot accept the customer.
-    
+    get:
+      summary: get list of customer IDs
+      description: Returns a list containing the ID of each customer
+      operationId: getCustomerIds
+            
+      responses:
+        '200':
+          description: The list containing the ID of each customer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string  
+                  example: "639b53b1b5cbbc71012f4084"
+                      
   /customer/byid/{customerId}:        
     get:
       summary: get customer by ID
@@ -72,6 +90,28 @@ paths:
                     example: 'Mustermann'
         
         '400': 
+          description: customer not found  
+
+    delete:
+      summary: delete customer
+      description: deletes the corresponding customer object.
+      operationId: deleteCustomer
+      parameters: 
+        - name: customerId
+          in: path
+          description: ID of the customer
+          required: true
+          schema:
+            type: string
+            
+      responses:
+        '200':
+          description: The corresponding customer was deleted.
+
+        '400': 
+          description: bad request  
+
+        '404': 
           description: customer not found  
     
   /customer/info:

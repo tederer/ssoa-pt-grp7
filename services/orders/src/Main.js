@@ -1,109 +1,85 @@
 /* global webshop, process, __dirname */
 
 require('../../common/src/logging/LoggingSystem.js');
+require('../../common/src/database/AzureCosmosDB.js');
 require('../../common/src/webserver/Webserver.js');
-require('./Service.js');
+require('../../common/src/service/BasicEntityOperations.js');
+require('../../common/src/MainInitializer.js');
+require('./OrderWorker.js');
+require('./States.js');
 
-const DEFAULT_LOG_LEVEL = 'INFO';
-const HTTP_OK           = 200;
-const HTTP_BAD_REQUEST  = 400;
-const HTTP_NOT_FOUND    = 404;
-const LOGGER            = webshop.logging.LoggingSystem.createLogger('Main');
-const logLevel          = webshop.logging.Level[process.env.LOG_LEVEL ?? DEFAULT_LOG_LEVEL];
-const pathPrefix        = '/order';
-const version           = webshop.getVersion();
+const entityName        = 'order';
+const pathPrefix        = '/' + entityName;
+const collectionName    = entityName + 's';
+const databaseName      = collectionName;
 
-const info = {
-   version:    (typeof version === 'string') ? version : 'not available',
-   pathPrefix: pathPrefix,
-   start:      (new Date()).toISOString()
+const info     = webshop.MainInitializer.initialize(pathPrefix);
+const LOGGER   = webshop.logging.LoggingSystem.createLogger('Main');
+const STATES   = webshop.orders.States;
+
+var creationRequestDataValid = function creationRequestDataValid(requestData) {
+   var isValid =  (requestData !== undefined)                        &&
+                  (typeof requestData.idempotencyKey === 'string')   &&
+                  (requestData.idempotencyKey.length > 0)            &&
+                  (typeof requestData.customerId === 'string')       &&
+                  (requestData.customerId.length > 0)                &&
+                  (typeof requestData.cartContent === typeof([]));
+
+   requestData.cartContent.forEach(content => {
+      isValid = isValid                                              &&
+            (typeof content.productId === 'string')                  &&
+            (content.productId.length > 0)                           &&
+            (typeof content.quantity === 'number')                   &&
+            (content.quantity > 0);
+   });
+
+   return isValid;
 };
 
-const webserverSettings = {
-   pathPrefix:       pathPrefix, 
-   rootFolderPath:   __dirname,
-   info:             info
-};
-
-webshop.logging.LoggingSystem.setMinLogLevel(logLevel);
-
-LOGGER.logInfo('version = ' + info.version);
-LOGGER.logInfo('log level = ' + logLevel.description);
-LOGGER.logInfo('pathPrefix = ' + pathPrefix);
-   
-var logRequest = function logRequest(request) {
-   LOGGER.logDebug(request.method + ' request [path: ' + request.path + ']');
-};
-
-var getOrderId = function getOrderId(request) {
-   return request.path.substring(request.path.lastIndexOf('/') + 1);
+var createEntityDocument = function createEntityDocument(requestData) {
+   var document = {
+      idempotencyKey:   requestData.idempotencyKey, 
+      customerId:       requestData.customerId, 
+      cartContent:      [],
+      state:            STATES.new.toString(),
+      lastModification: Date.now()
+   };
+   requestData.cartContent.forEach(content => {
+      document.cartContent.push({productId: content.productId, quantity: content.quantity});
+   });
+   return document;
 };
 
 var startup = async function startup() {
-   var service = new webshop.orders.Service();
-   
+   var database;
+
    try {
-      await service.start();
+      database = await(new webshop.database.AzureCosmosDB(databaseName)).open();
+      new webshop.orders.OrderWorker(database, collectionName);
    } catch(error) {
       LOGGER.logError("failed to start service: " + error);
       process.exit(1);
    }
 
-   webshop.Webserver(webserverSettings, app => {
-      app.post(pathPrefix, (request, response) => {
-         logRequest(request);
-         
-         service.createOrder(request.body)
-            .then(result => {
-               LOGGER.logInfo('created order ' + result.orderId);
-               response.status(HTTP_OK).json(result);
-            })
-            .catch(error => {
-               LOGGER.logError(error);
-               response.status(HTTP_BAD_REQUEST).end();
-            });
-      });
+   const webserverSettings = {
+      pathPrefix:       pathPrefix, 
+      rootFolderPath:   __dirname,
+      info:             info
+   };
+   
+   webshop.webserver.Webserver(webserverSettings, app => {
 
-      app.get(pathPrefix, (request, response) => {
-         logRequest(request);
-         
-         service.getOrderIds()
-            .then(result => response.status(HTTP_OK).json(result))
-            .catch(error => {
-               LOGGER.logError(error);
-               response.status(HTTP_BAD_REQUEST).end();
-            });
-      });
+      var settings = {
+                        app                        : app,
+                        database                   : database,        
+                        collectionName             : collectionName,
+                        entityName                 : entityName,
+                        pathPrefix                 : pathPrefix,
+                        creationRequestDataValid   : creationRequestDataValid,
+                        createEntityDocument       : createEntityDocument
+                     };
 
-      app.get(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
-         logRequest(request);
-         var orderId = getOrderId(request);
-         
-         service.getOrder(orderId)
-            .then(result => response.status(HTTP_OK).json(result))
-            .catch(error => {
-               LOGGER.logError(error);
-               response.status(HTTP_NOT_FOUND).end();
-            });
-      });
-
-      app.delete(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
-         logRequest(request);
-         var orderId = getOrderId(request);
-         
-         service.deleteOrder(orderId)
-            .then(deletedCount => {
-               if (deletedCount > 0) {
-                  LOGGER.logInfo('deleted order ' + orderId);
-               }
-               var statusCode = (deletedCount > 0) ? HTTP_OK : HTTP_NOT_FOUND;
-               response.status(statusCode).end();
-            })
-            .catch(error => {
-               LOGGER.logError(error);
-               response.status(HTTP_BAD_REQUEST).end();
-            });
-      });
+      new webshop.service.BasicEntityOperations(settings);
    });
 };
 

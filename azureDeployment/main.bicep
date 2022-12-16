@@ -25,6 +25,7 @@ module database 'database.bicep' = {
     location: location
     databaseName: databaseName
   }
+  dependsOn:[vnet]
 }
 
 module services 'services.bicep' = {
@@ -34,14 +35,14 @@ module services 'services.bicep' = {
     location:     location
     databaseName: databaseName
   }
-  dependsOn:[vnet, database]
+  dependsOn:[database]
 }
 
-module apiGateway 'apiGateway.bicep' = {
+/*module apiGateway 'apiGateway.bicep' = {
   scope: resourceGroup
   name: 'apiGateway'
   params:{
     location: location
   }
-  dependsOn:[vnet, services]
-}
+  dependsOn:[services]
+}*/

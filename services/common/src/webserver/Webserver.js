@@ -3,7 +3,7 @@
 require('../logging/LoggingSystem.js');
 require('../Version.js');
 
-assertNamespace('webshop');
+assertNamespace('webshop.webserver');
 
 /**
  * constructor function of a webserver
@@ -11,7 +11,7 @@ assertNamespace('webshop');
  * initializationFunction  this function gets called before the webserver starts listening 
  *                         and it receiving the Express app object
  */
-webshop.Webserver = function Webserver(settings, initializationFunction) {
+webshop.webserver.Webserver = function Webserver(settings, initializationFunction) {
 
    var LOGGER                    = webshop.logging.LoggingSystem.createLogger('Webserver');
    var DEFAULT_PORT              = 80;

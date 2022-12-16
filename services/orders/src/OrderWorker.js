@@ -46,7 +46,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
    var process = async function process(order) {
       LOGGER.logInfo('processing order ' + order._id.toString());
       
-      // TODO implement order processing here
+      // TODO implement order processing here. Transaction necessary?
       
       var newState = STATES.approved.toString();
       LOGGER.logInfo('setting state of order ' + order._id.toString() + ' to ' + newState);
