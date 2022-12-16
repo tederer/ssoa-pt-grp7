@@ -1,38 +1,74 @@
 /* global webshop, process, __dirname */
 
 require('../../common/src/logging/LoggingSystem.js');
+require('../../common/src/database/AzureCosmosDB.js');
 require('../../common/src/webserver/Webserver.js');
+require('../../common/src/service/BasicEntityOperations.js');
+require('../../common/src/MainInitializer.js');
+require('./IncrementOperation.js');
 
-var DEFAULT_LOG_LEVEL = 'INFO';
-var LOGGER            = webshop.logging.LoggingSystem.createLogger('Webserver');
-var logLevel          = webshop.logging.Level[process.env.LOG_LEVEL ?? DEFAULT_LOG_LEVEL];
-var pathPrefix        = '/product';
+const entityName        = 'product';
+const pathPrefix        = '/' + entityName;
+const collectionName    = entityName + 's';
+const databaseName      = collectionName;
 
-webshop.logging.LoggingSystem.setMinLogLevel(logLevel);
+const info     = webshop.MainInitializer.initialize(pathPrefix);
+const LOGGER   = webshop.logging.LoggingSystem.createLogger('Main');
 
-LOGGER.logInfo('log level = ' + logLevel.description);
+var creationRequestDataValid = function creationRequestDataValid(requestData) {
+   return   (requestData !== undefined)                        &&
+            (typeof requestData.idempotencyKey === 'string')   &&
+            (requestData.idempotencyKey.length > 0)            &&
+            (typeof requestData.name === 'string')             &&
+            (requestData.name.length > 0)                      &&
+            (typeof requestData.price === 'number')            &&
+            (requestData.price >= 0)                           &&
+            (typeof requestData.quantity === 'number')         &&
+            (requestData.quantity >= 0);
+};
 
-var initializationFunction = function initializationFunction(app, webserverLogger) {
-   app.get(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
-      var path      = request.path;
-      var productId = path.substring(path.lastIndexOf('/') + 1);
-      webserverLogger.logDebug('GET request [path: ' + path + ']');
-      // TODO implement searching for the order and return it
-      response.status(200).json({ id: productId});
-   });
+var createEntityDocument = function createEntityDocument(requestData) {
+   var document = {
+      idempotencyKey:   requestData.idempotencyKey, 
+      name:             requestData.name, 
+      price:            requestData.price,
+      quantity:         requestData.quantity,
+      lastModification: Date.now()
+   };
+   return document;
+};
 
-   app.post(pathPrefix, (request, response) => {
-      var path = request.path;
-      var data = request.body;
-      webserverLogger.logDebug('POST request [path: ' + path + ']');
-      // TODO implement creation of order
-      response.status(200).json({ id: 'foo'});
+var startup = async function startup() {
+   var database;
+
+   try {
+      database = await(new webshop.database.AzureCosmosDB(databaseName)).open();
+   } catch(error) {
+      LOGGER.logError("failed to start service: " + error);
+      process.exit(1);
+   }
+
+   const webserverSettings = {
+      pathPrefix:       pathPrefix, 
+      rootFolderPath:   __dirname,
+      info:             info
+   };
+   
+   webshop.webserver.Webserver(webserverSettings, app => {
+
+      var settings = {
+                        app                        : app,
+                        database                   : database,        
+                        collectionName             : collectionName,
+                        entityName                 : entityName,
+                        pathPrefix                 : pathPrefix,
+                        creationRequestDataValid   : creationRequestDataValid,
+                        createEntityDocument       : createEntityDocument
+                     };
+
+      new webshop.service.BasicEntityOperations(settings);
+      new webshop.products.IncrementOperation(settings);
    });
 };
 
-var settings = {
-   pathPrefix: pathPrefix, 
-   rootFolderPath: __dirname
-};
-
-webshop.webserver.Webserver(settings, initializationFunction);
+startup();

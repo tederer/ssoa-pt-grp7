@@ -42,7 +42,7 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
    };
 
    /**
-    * Returns the first document matching the query.
+    * Returns the first document matching the query or null of nothing matches the query.
     */
    this.findOne = async function findOne(collectionName, query) {
       LOGGER.logDebug('find one document in collection "' + collectionName + '" (query=' + JSON.stringify(query) + ')');
@@ -59,6 +59,17 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
       LOGGER.logDebug('delete one document in collection "' + collectionName + '" (query=' + JSON.stringify(query) + ')');
       assertConnected('findOne');
       return (await database.collection(collectionName).deleteOne(query)).deletedCount;
+   };
+
+   /**
+    * Deletes all documents matching the query.
+    * 
+    * returns the number of deleted documents
+    */
+   this.deleteMany = async function deleteMany(collectionName, query) {
+      LOGGER.logDebug('delete many document in collection "' + collectionName + '" (query=' + JSON.stringify(query) + ')');
+      assertConnected('deleteMany');
+      return (await database.collection(collectionName).deleteMany(query)).deletedCount;
    };
 
    /**

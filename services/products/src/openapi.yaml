@@ -47,6 +47,26 @@ paths:
                   
         '400':
           description: Cannot accept the product.
+
+    get:
+      summary: get list of procuct IDs
+      description: Returns a list containing the ID of each product
+      operationId: getProductIds
+            
+      responses:
+        '200':
+          description: The list containing the ID of each product
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  type: object
+                  properties:
+                    orderId: 
+                      type: string
+                  example:
+                    - orderId: '123e4'       
     
   /product/byid/{productId}:        
     get:
@@ -87,9 +107,59 @@ paths:
         '400': 
           description: product not found  
     
+    delete:
+      summary: delete product
+      description: deletes the corresponding product object.
+      operationId: deleteProduct
+      parameters: 
+        - name: productId
+          in: path
+          description: ID of the product
+          required: true
+          schema:
+            type: string
+            
+      responses:
+        '200':
+          description: The corresponding product was deleted.
+
+        '400': 
+          description: bad request  
+
+        '404': 
+          description: product not found  
+    
+  /product/quantity:
+    post:
+      summary: change the number of available pieces
+      operationId: changeProductQuantity
+      requestBody:
+        description: Adds a new product
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idempotencyKey:
+                  type: string
+                  example: 'eerr-ddfr-2232'
+                productId:
+                  type: string
+                  example: '334e54wr53'
+                increment:
+                  type: number
+                  example: -5
+
+      responses:
+        '200':
+          description: The quantity was changed.
+
+        '400': 
+          description: bad request  
+  
   /product/info:
     get:
-      summary: get service related informations
+      summary: get product related informations
       description: Returns the version, url path prefix and startup time of the service. This path is also used to satifsy the health probe of the Azure Application Gateway.
       operationId: getServiceInfo
       responses:
