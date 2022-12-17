@@ -17,7 +17,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
    const pathPrefix               = settings.pathPrefix;
    const creationRequestDataValid = settings.creationRequestDataValid;
    const createEntityDocument     = settings.createEntityDocument;
-
+   
    var assertDatabaseConnected = function assertDatabaseConnected() {
       if (database === undefined) {
          throw 'database not (yet) connected -> cannot execute operatation (Did you forget to call the start-method?)';
@@ -47,14 +47,15 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
    var createEntityIfItDoesNotExist = function createEntityIfItDoesNotExist(requestData) {
       return async function(db) {
          try {
-            var foundRecord = await db.findOne(collectionName, {idempotencyKey: requestData.idempotencyKey});
-            if (foundRecord !== null) {
-               return {id: foundRecord._id.toString()};
-            } else {
-               var document   = createEntityDocument(requestData);
-               var id         = await db.insert(collectionName, document);
-               return {id: id};
+            var previouslyCreatedEntity = await db.findOne(collectionName, {idempotencyKey: requestData.idempotencyKey});
+            if (previouslyCreatedEntity !== null) {
+               return {id: previouslyCreatedEntity._id.toString(), createdCount: 0};
             }
+            
+            var document   = createEntityDocument(requestData);
+            var id         = await db.insert(collectionName, document);
+            return {id: id, createdCount: 1};
+            
          } catch(error) {
             throw 'failed to create ' + entityName + ' with idempotencyKey \"' + requestData.idempotencyKey + '\": ' + error;
          }
@@ -112,8 +113,10 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
       
       createEntity(request.body)
          .then(result => {
-            LOGGER.logInfo('created ' + entityName + ' ' + result.id);
-            response.status(RESPONSE.OK).json(result);
+            if (result.createdCount > 0) {
+               LOGGER.logInfo('created ' + entityName + ' ' + result.id);
+            }
+            response.status(RESPONSE.OK).json({id: result.id});
          })
          .catch(error => {
             LOGGER.logError('failed to create new ' + entityName + ': ' + error);
