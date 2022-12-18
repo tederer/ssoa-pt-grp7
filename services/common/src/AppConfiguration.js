@@ -6,6 +6,8 @@
 
 require('../../common/src/NamespaceUtils.js');
 
+const { AppConfigurationClient } = require("@azure/app-configuration");
+
 assertNamespace('webshop');
 
 webshop.AppConfiguration = function AppConfiguration(connectionString) {
@@ -20,8 +22,3 @@ webshop.AppConfiguration = function AppConfiguration(connectionString) {
       return (await client.getConfigurationSetting({ key: key })).value;
    };
 };
-
-const client = new webshop.AppConfiguration();
-client.get('DATABASE_CONNECTION_STRING')
-   .then(console.log)
-   .catch(console.log);

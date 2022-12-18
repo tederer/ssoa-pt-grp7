@@ -18,7 +18,8 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
    const STATES                              = webshop.orders.States;
    const HTTP_CLIENT                         = new webshop.webserver.HttpClient();
    const RESPONSE                            = webshop.webserver.HttpResponses;
-   const API_GATEWAY_IP_ADDR                 = process.env.API_GATEWAY_IP_ADDR ?? '127.0.0.1';
+   
+   var apiGatewayIpAddress;
 
    var getOldestNewOrder = async function getOldestNewOrder() {
       var oldestNewOrder = await database.getLongestUnmodified(collectionName, {state: STATES.new.toString()});
@@ -49,11 +50,16 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
    };
 
    var queryProductsInCart = async function queryProductsInCart(cartContent) {
+      if (apiGatewayIpAddress === undefined) {
+         const appConfig = webshop.AppConfiguration(process.env.APP_CONFIG_CONNECTION_STRING);
+         apiGatewayIpAddress = await appConfig.get('DATABASE_CONNECTION_STRING');
+      }
+
       var productsInCart = {};
 
       for (var i = 0; i < cartContent.length; i++) {
          var content = cartContent[i];
-         var response = await HTTP_CLIENT.get(API_GATEWAY_IP_ADDR, '/product/byid/' + content.productId);
+         var response = await HTTP_CLIENT.get(apiGatewayIpAddress, '/product/byid/' + content.productId);
          if (response.statusCode === RESPONSE.OK) {
             productsInCart[content.productId] = response.data;
          } else {

@@ -9,6 +9,10 @@ param maxStalenessPrefix      int     = 100000
 param maxIntervalInSeconds    int     = 300
 param sharedThroughput        int     = 400
 
+resource appConfig 'Microsoft.AppConfiguration/configurationStores@2022-05-01' existing = {
+  name: 'ssoa-config'
+}
+
 var consistencyPolicy = {
   Eventual: {
     defaultConsistencyLevel: 'Eventual'
@@ -67,5 +71,13 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases@2022-0
     options: {
       throughput: sharedThroughput
     }
+  }
+}
+
+resource keyValue1 'Microsoft.AppConfiguration/configurationStores/keyValues@2022-05-01' = {
+  parent: appConfig
+  name: 'DATABASE_CONNECTION_STRING'
+  properties:{
+    value: account.listConnectionStrings().connectionStrings[0].connectionString
   }
 }

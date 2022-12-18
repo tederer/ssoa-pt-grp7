@@ -9,6 +9,23 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: 'rg-demoproject'
 }
 
+module appConfiguration 'appConfiguration.bicep' = {
+  scope: resourceGroup
+  name:  'appConfiguration' 
+  params:{
+    location: location
+  }
+}
+
+module publicIpAddr 'publicIpAddress.bicep' = {
+  scope: resourceGroup
+  name:  'publicIpAddress' 
+  params:{
+    location: location
+  }
+  dependsOn:[appConfiguration]
+}
+
 module vnet 'vnet.bicep' = {
   scope: resourceGroup
   name: 'vnet'
@@ -16,6 +33,7 @@ module vnet 'vnet.bicep' = {
     location:     location
     vnetName:     'vnet'
   }
+  dependsOn:[publicIpAddr]
 }
 
 module database 'database.bicep' = {
@@ -38,11 +56,11 @@ module services 'services.bicep' = {
   dependsOn:[database]
 }
 
-/*module apiGateway 'apiGateway.bicep' = {
+module apiGateway 'apiGateway.bicep' = {
   scope: resourceGroup
   name: 'apiGateway'
   params:{
     location: location
   }
   dependsOn:[services]
-}*/
+}

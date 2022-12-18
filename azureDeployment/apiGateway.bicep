@@ -1,6 +1,6 @@
-param location     string
+param location string
 
-var name         = 'API-gateway'
+var name = 'API-gateway'
 
 resource vnetSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
   scope: resourceGroup()
@@ -27,15 +27,14 @@ resource customersService 'Microsoft.ContainerInstance/containerGroups@2021-10-0
   name: 'customers-service'
 }
 
-resource publicIpAddress 'Microsoft.Network/publicIpAddresses@2020-08-01' = {
-  name: 'public-ip'
-  location: location
-  sku: {
-    name: 'Basic'
-  }
-  properties: {
-    publicIPAllocationMethod: 'Dynamic'
-  }
+resource publicIpAddress 'Microsoft.Network/publicIpAddresses@2020-08-01' existing = {
+  scope: resourceGroup()
+  name:  'public-ip'
+}
+
+resource appConfig 'Microsoft.AppConfiguration/configurationStores@2022-05-01' existing = {
+  scope: resourceGroup()
+  name: 'ssoa-config'
 }
 
 resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
@@ -246,7 +245,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
             {
               name: 'productsPathRule'
               properties:{
-                paths:['/product/*']
+                paths:['/product*']
                 backendAddressPool: {
                   id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'productPool')
                 }
@@ -258,7 +257,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
             {
               name: 'ordersPathRule'
               properties:{
-                paths:['/order/*']
+                paths:['/order*']
                 backendAddressPool: {
                   id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'orderPool')
                 }
@@ -270,7 +269,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
             {
               name: 'customersPathRule'
               properties:{
-                paths:['/customer/*']
+                paths:['/customer*']
                 backendAddressPool: {
                   id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'customerPool')
                 }
@@ -298,4 +297,13 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
       }
     ]
   }
+}
+
+resource keyValue1 'Microsoft.AppConfiguration/configurationStores/keyValues@2022-05-01' = {
+  parent: appConfig
+  name: 'API_GATEWAY_IP_ADDR'
+  properties:{
+    value: publicIpAddress.properties.ipAddress
+  }
+  dependsOn:[apiGateway]
 }

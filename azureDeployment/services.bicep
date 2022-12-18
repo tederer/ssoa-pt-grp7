@@ -9,14 +9,14 @@ var restartPolicy       = 'Always'
 var gitRepoUrl          = 'https://github.com/tederer/ssoa-pt-grp7.git'
 var serviceNames        = ['webserver', 'products', 'orders', 'customers']
 
-resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2022-05-15' existing = {
-  scope: resourceGroup()
-  name: 'db-account-for-ssoa-pt-grp7'
-}
-
 resource vnetSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
   scope: resourceGroup()
   name: 'vnet/servicesSubnet'
+}
+
+resource appConfig 'Microsoft.AppConfiguration/configurationStores@2022-05-01' existing = {
+  scope: resourceGroup()
+  name: 'ssoa-config'
 }
 
 resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01' = [for serviceName in serviceNames: {
@@ -51,14 +51,14 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01'
             {
               name:   'LOG_LEVEL'
               value:  'INFO'
-            } 
-            {
-              name:   'DATABASE_CONNECTION_STRING'
-              value:  databaseAccount.listConnectionStrings().connectionStrings[0].connectionString
             }
             {
               name:   'DATABASE_NAME'
               value:  databaseName
+            }
+            {
+              name:   'APP_CONFIG_CONNECTION_STRING'
+              value:  appConfig.listKeys().value[0].connectionString
             }
             {
               name:   'ACTIVATE_SWAGGER'
