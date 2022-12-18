@@ -44,7 +44,7 @@ var startup = async function startup() {
    try {
       database = await(new webshop.database.AzureCosmosDB(databaseName)).open();
    } catch(error) {
-      LOGGER.logError("failed to start service: " + error);
+      LOGGER.logError('failed to start service: ' + error);
       process.exit(1);
    }
 

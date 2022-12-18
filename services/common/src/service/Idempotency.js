@@ -1,4 +1,4 @@
-/* global webshop, assertNamespace */
+/* global webshop, assertNamespace, setInterval */
 
 const { Logger } = require('mongodb');
 
@@ -23,7 +23,7 @@ webshop.service.Idempotency = function Idempotency(database) {
    this.isNewRequest = async function isNewRequest(idempotencyKey) {
       var isNew = false;
       var foundRecord = await database.findOne(collectionName, {idempotencyKey: idempotencyKey});
-      if (foundRecord == null) {
+      if (foundRecord === null) {
          await database.insert(collectionName, {idempotencyKey: idempotencyKey, timestamp: Date.now()});
          LOGGER.logInfo('added idempotencyKey \"' + idempotencyKey + '\"');
          isNew = true;

@@ -4,9 +4,9 @@ require('../../common/src/NamespaceUtils.js');
 require('../../common/src/webserver/Webserver.js');
 require('../../common/src/service/Idempotency.js');
 
-assertNamespace('webshop.products');
+assertNamespace('webshop.customers');
 
-webshop.products.IncrementOperation = function IncrementOperation(settings) {
+webshop.customers.IncrementOperation = function IncrementOperation(settings) {
    
    const LOGGER                   = webshop.logging.LoggingSystem.createLogger('IncrementOperation');
    const RESPONSE                 = webshop.webserver.HttpResponses;
@@ -27,8 +27,8 @@ webshop.products.IncrementOperation = function IncrementOperation(settings) {
       var isValid = (requestData !== undefined)          &&
       (typeof requestData.idempotencyKey === 'string')   &&
       (requestData.idempotencyKey.length > 0)            &&
-      (typeof requestData.productId === 'string')        &&
-      (requestData.productId.length > 0)                 &&
+      (typeof requestData.customerId === 'string')       &&
+      (requestData.customerId.length > 0)                &&
       (typeof requestData.increment === 'number');
 
       if(!isValid) {
@@ -36,24 +36,24 @@ webshop.products.IncrementOperation = function IncrementOperation(settings) {
       }
    };
 
-   var incrementQuantity = async function incrementQuantity(requestData) {
-      LOGGER.logDebug('increment quantity (requestData=' + JSON.stringify(requestData) + ')');
+   var incrementCredit = async function incrementCredit(requestData) {
+      LOGGER.logDebug('increment credit (requestData=' + JSON.stringify(requestData) + ')');
       assertDatabaseConnected();
       assertValidRequestData(requestData);
          
       return database.executeAsTransaction(async function(db) {
          var modifiedCount = 0;
-         var queryById     = {_id: ObjectId(requestData.productId)};
+         var queryById     = {_id: ObjectId(requestData.customerId)};
          var increment     = requestData.increment;
 
          if (await idempotencyChecker.isNewRequest(requestData.idempotencyKey)) {
             var product = await database.findOne(collectionName, queryById);
             if (product !== null) {
                if (product.quantity + increment < 0) {
-                  throw 'cannot increment quantity of ' + product._id.toString() + ' by ' + increment + ' because quantity will be negative';
+                  throw 'cannot increment credit of ' + product._id.toString() + ' by ' + increment + ' because credit will be negative';
                } 
                
-               modifiedCount = await db.updateOne(collectionName, queryById, {$inc: {quantity: increment}});
+               modifiedCount = await db.updateOne(collectionName, queryById, {$inc: {credit: increment}});
                await db.updateOne(collectionName, queryById, {$set: {lastModification: Date.now()}});
             }
          }
@@ -61,18 +61,18 @@ webshop.products.IncrementOperation = function IncrementOperation(settings) {
       });
    };
    
-   app.post(pathPrefix + '/quantity', (request, response) => {
+   app.post(pathPrefix + '/credit', (request, response) => {
       LOGGER.logDebug(request.method + ' request [path: ' + request.path + ']');
       var requestData = request.body;
-      incrementQuantity(requestData)
+      incrementCredit(requestData)
          .then(modifiedCount => {
             if (modifiedCount > 0) {
-               LOGGER.logInfo('incremented quantity (id=' + requestData.productId + ',increment=' + requestData.increment + ')');
+               LOGGER.logInfo('incremented credit (id=' + requestData.customerId + ',increment=' + requestData.increment + ')');
             }
             response.status(RESPONSE.OK).end();
          })
          .catch(error => {
-            LOGGER.logError('failed to increment quantity (idempotencyKey=' + requestData.idempotencyKey + '): ' + error);
+            LOGGER.logError('failed to increment credit (idempotencyKey=' + requestData.idempotencyKey + '): ' + error);
             response.status(RESPONSE.BAD_REQUEST).end();
          });
    });   

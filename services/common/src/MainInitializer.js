@@ -1,4 +1,4 @@
-/* global webshop, assertNamespace */
+/* global webshop, assertNamespace, process */
 
 require('../../common/src/NamespaceUtils.js');
 require('../../common/src/logging/LoggingSystem.js');

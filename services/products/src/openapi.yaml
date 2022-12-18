@@ -134,7 +134,7 @@ paths:
       summary: change the number of available pieces
       operationId: changeProductQuantity
       requestBody:
-        description: Adds a new product
+        description: changes the number of available pieces
         content:
           application/json:
             schema:

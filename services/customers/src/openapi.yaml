@@ -114,6 +114,34 @@ paths:
         '404': 
           description: customer not found  
     
+  /customer/credit:
+    post:
+      summary: change the credit of the customer
+      operationId: changeCustomerCredit
+      requestBody:
+        description: increments the customers credit
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idempotencyKey:
+                  type: string
+                  example: 'eerr-ddfr-2232'
+                customerId:
+                  type: string
+                  example: '334e54wr53'
+                increment:
+                  type: number
+                  example: -70
+
+      responses:
+        '200':
+          description: The credit was changed.
+
+        '400': 
+          description: bad request  
+
   /customer/info:
     get:
       summary: get service related informations

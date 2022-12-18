@@ -5,7 +5,7 @@ require('../../common/src/database/AzureCosmosDB.js');
 require('../../common/src/webserver/Webserver.js');
 require('../../common/src/service/BasicEntityOperations.js');
 require('../../common/src/MainInitializer.js');
-require('./Service.js');
+require('./IncrementOperation.js');
 
 const entityName        = 'customer';
 const pathPrefix        = '/' + entityName;
@@ -38,14 +38,12 @@ var createEntityDocument = function createEntityDocument(requestData) {
 };
 
 var startup = async function startup() {
-   var service;
    var database;
 
    try {
       database = await(new webshop.database.AzureCosmosDB(databaseName)).open();
-      service  = new webshop.customers.Service(database);
    } catch(error) {
-      LOGGER.logError("failed to start service: " + error);
+      LOGGER.logError('failed to start service: ' + error);
       process.exit(1);
    }
 
@@ -68,6 +66,7 @@ var startup = async function startup() {
                      };
 
       new webshop.service.BasicEntityOperations(settings);
+      new webshop.customers.IncrementOperation(settings);
    });
 };
 

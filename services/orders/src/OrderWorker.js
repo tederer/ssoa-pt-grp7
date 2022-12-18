@@ -1,19 +1,24 @@
-/* global webshop, assertNamespace */
+/* global webshop, process, assertNamespace, setTimeout */
 
 const { ObjectId } = require('mongodb');
 
 require('../../common/src/NamespaceUtils.js');
 require('../../common/src/logging/LoggingSystem.js');
+require('../../common/src/webserver/HttpClient.js');
+require('../../common/src/webserver/HttpResponses.js');
+
 require('./States.js');
 
 assertNamespace('webshop.orders');
 
 webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
-
    const MAX_ORDER_PROCESSING_DURATION_IN_MS = 10000; // TODO take higher value
    const SLEEP_DURATION_IN_MS                = 1000;
    const LOGGER                              = webshop.logging.LoggingSystem.createLogger('OrderWorker');
    const STATES                              = webshop.orders.States;
+   const HTTP_CLIENT                         = new webshop.webserver.HttpClient();
+   const RESPONSE                            = webshop.webserver.HttpResponses;
+   const API_GATEWAY_IP_ADDR                 = process.env.API_GATEWAY_IP_ADDR ?? '127.0.0.1';
 
    var getOldestNewOrder = async function getOldestNewOrder() {
       var oldestNewOrder = await database.getLongestUnmodified(collectionName, {state: STATES.new.toString()});
@@ -35,7 +40,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
       };
 
       var modifiedCount = await database.executeAsTransaction(async function(db) {
-         return await db.updateMany(collectionName, query, {$set: {'state': STATES.new.toString(), lastModification: Date.now()}})
+         return await db.updateMany(collectionName, query, {$set: {'state': STATES.new.toString(), lastModification: Date.now()}});
       });
 
       if (modifiedCount > 0) {
@@ -43,9 +48,34 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
       }
    };
 
-   var process = async function process(order) {
+   var queryProductsInCart = async function queryProductsInCart(cartContent) {
+      var productsInCart = {};
+
+      for (var i = 0; i < cartContent.length; i++) {
+         var content = cartContent[i];
+         var response = await HTTP_CLIENT.get(API_GATEWAY_IP_ADDR, '/product/byid/' + content.productId);
+         if (response.statusCode === RESPONSE.OK) {
+            productsInCart[content.productId] = response.data;
+         } else {
+            throw 'failed to query product data (productId=' + content.productId + ',response=' + JSON.stringify(response) + ')';
+         }
+      }
+
+      return productsInCart;
+   };
+
+   var calculateOrderTotal = function calculateOrderTotal(cartContent, productsInCart) {
+      var total = 0;
+      cartContent.forEach(content => total += content.quantity * productsInCart[content.productId].price);
+      return total;
+   };
+
+   var processOrder = async function processOrder(order) {
       LOGGER.logInfo('processing order ' + order._id.toString());
-      
+      var productsInCart = await queryProductsInCart(order.cartContent);
+      console.log(productsInCart);
+      var orderTotal     = calculateOrderTotal(order.cartContent, productsInCart);
+      console.log('total = ' + orderTotal);
       // TODO implement order processing here. Transaction necessary?
       
       var newState = STATES.approved.toString();
@@ -57,7 +87,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
       try {
          var oldestNewOrder;
          while ((oldestNewOrder = await database.executeAsTransaction(getOldestNewOrder)) !== undefined) {
-            await process(oldestNewOrder);
+            await processOrder(oldestNewOrder);
          }
          resetStateOfExpiredOrdersInProgress();
       } catch(error) {

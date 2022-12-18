@@ -2,6 +2,7 @@
 
 require('../NamespaceUtils.js');
 require('../logging/LoggingSystem.js');
+require('../AppConfiguration.js');
 
 assertNamespace('webshop.database');
 
@@ -169,8 +170,9 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
     */
    this.open = async function open() {
       if (mongoClient === undefined) {
-         var connectionString = process.env.DATABASE_CONNECTION_STRING;
-         if (typeof connectionString !== 'string' || connectionString.length <= 0) {
+         const appConfig = webshop.AppConfiguration(process.env.APP_CONFIG_CONNECTION_STRING);
+         var connectionString = await appConfig.get('DATABASE_CONNECTION_STRING');
+         if (typeof connectionString !== 'string' || connectionString.length === 0) {
             throw 'invalid database connection string "' + connectionString + '"';
          } 
 
