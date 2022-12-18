@@ -170,7 +170,7 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
     */
    this.open = async function open() {
       if (mongoClient === undefined) {
-         const appConfig = webshop.AppConfiguration(process.env.APP_CONFIG_CONNECTION_STRING);
+         const appConfig = new webshop.AppConfiguration(process.env.APP_CONFIG_CONNECTION_STRING);
          var connectionString = await appConfig.get('DATABASE_CONNECTION_STRING');
          if (typeof connectionString !== 'string' || connectionString.length === 0) {
             throw 'invalid database connection string "' + connectionString + '"';
