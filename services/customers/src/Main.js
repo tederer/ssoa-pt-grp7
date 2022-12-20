@@ -5,7 +5,7 @@ require('../../common/src/database/AzureCosmosDB.js');
 require('../../common/src/webserver/Webserver.js');
 require('../../common/src/service/BasicEntityOperations.js');
 require('../../common/src/MainInitializer.js');
-require('./IncrementOperation.js');
+require('../../common/src/service/IncrementOperation.js');
 
 const entityName        = 'customer';
 const pathPrefix        = '/' + entityName;
@@ -61,11 +61,13 @@ var startup = async function startup() {
                         entityName                 : entityName,
                         pathPrefix                 : pathPrefix,
                         creationRequestDataValid   : creationRequestDataValid,
-                        createEntityDocument       : createEntityDocument
+                        createEntityDocument       : createEntityDocument,
+                        entityName                 : 'customer',
+                        nameOfFieldToIncrement     : 'credit'
                      };
 
       new webshop.service.BasicEntityOperations(settings);
-      new webshop.customers.IncrementOperation(settings);
+      new webshop.service.IncrementOperation(settings);
    });
 };
 
