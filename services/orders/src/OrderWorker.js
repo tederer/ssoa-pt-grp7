@@ -114,7 +114,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
          var orderTotal     = calculateOrderTotal(order.cartContent, products);
          var idempotencyKey = order._id.toString();
          
-         var response = await HTTP_CLIENT.post(await getApiGatewayIpAddress(), '/customer/credit', {
+         var response = await HTTP_CLIENT.post(await getApiGatewayIpAddress(), '/customer/credit/increment', {
             idempotencyKey: idempotencyKey,
             customerId:     order.customerId,
             increment:      -orderTotal
@@ -123,7 +123,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
          
          for (var i = 0; i < order.cartContent.length; i++) {
             var content = order.cartContent[i];
-            response = await HTTP_CLIENT.post(await getApiGatewayIpAddress(), '/product/quantity/', {
+            response = await HTTP_CLIENT.post(await getApiGatewayIpAddress(), '/product/quantity/increment', {
                idempotencyKey: idempotencyKey,
                productId:      content.productId,
                increment:      -content.quantity
@@ -138,9 +138,17 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
 
    var progressReadyForUndoOrders = async function progressReadyForUndoOrders() {
       var order = await getNextOrderToUndo();
+      
       while (order !== undefined) {
          LOGGER.logInfo('processing undo order ' + order._id);
-         // TODO implement undo
+         var idempotencyKey = order._id.toString();
+
+         var response = await HTTP_CLIENT.delete(await getApiGatewayIpAddress(), '/customer/credit/increment', {idempotencyKey: idempotencyKey});
+         assertValidResponse(response, 'undo decrement customer credit', order);
+         
+         var response = await HTTP_CLIENT.delete(await getApiGatewayIpAddress(), '/customer/product/increment', {idempotencyKey: idempotencyKey});
+         assertValidResponse(response, 'undo decrement product quantity', order);
+         
          setOrderState(order, STATES.rejected);
          order = await getNextOrderToUndo();
       }

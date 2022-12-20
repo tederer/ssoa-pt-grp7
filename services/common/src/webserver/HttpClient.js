@@ -28,8 +28,8 @@ webshop.webserver.HttpClient = function HttpClient() {
             timeout:    TIMEOUT_IN_MS
          };
 
-         var isPostRequest = options.method === 'POST';
-         var description   = 'options=' + JSON.stringify(options) + (isPostRequest ? ',data=' + JSON.stringify(data) : '');
+         var requestSendsDataInBody = (options.method === 'POST') || (options.method === 'DELETE');
+         var description            = 'options=' + JSON.stringify(options) + (requestSendsDataInBody ? ',data=' + JSON.stringify(data) : '');
 
          var request = http.request(options, response => {
             var data = '';
@@ -41,7 +41,7 @@ webshop.webserver.HttpClient = function HttpClient() {
 
          request.on('error',   error => reject('request error (' + description + '): ' + error));
          request.on('timeout', error => reject('request timed out (' + description + '): ' + error));
-         if (isPostRequest) {
+         if (requestSendsDataInBody) {
             request.setHeader('Content-Type', 'application/json');
             request.write(JSON.stringify(data));
          }
@@ -63,7 +63,16 @@ webshop.webserver.HttpClient = function HttpClient() {
     * 
     * returns an object containing the statusCode and the received data.
     */
-   this.post = async function post(hostname, path, data) {
+    this.post = async function post(hostname, path, data) {
       return request(hostname, path, 'POST', data);
+   };
+
+   /**
+    * Sends a HTTP DELETE request containing data (as content type "application/json") to hostname:path.
+    * 
+    * returns an object containing the statusCode and the received data.
+    */
+    this.delete = async function del(hostname, path, data) {
+      return request(hostname, path, 'DELETE', data);
    };
 };
