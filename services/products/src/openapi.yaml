@@ -19,7 +19,7 @@ paths:
               properties:
                 idempotencyKey:
                   type: string
-                  example: 'eerr-ddfr-2232'
+                  example: '63a1f82a2006becc88af136b'
                 name:
                   type: string
                   example: 'Sonnenblume'
@@ -91,7 +91,7 @@ paths:
                 properties:
                   idempotencyKey:
                     type: string
-                    example: 'eerr-ddfr-2232'
+                    example: '63a1f82a2006becc88af136b'
                   name:
                     type: string
                     example: 'Sonnenblume'
@@ -129,7 +129,7 @@ paths:
         '404': 
           description: product not found  
     
-  /product/quantity:
+  /product/quantity/increment:
     post:
       summary: change the number of available pieces
       operationId: changeProductQuantity
@@ -142,7 +142,7 @@ paths:
               properties:
                 idempotencyKey:
                   type: string
-                  example: 'eerr-ddfr-2232'
+                  example: '63a1f71147d02b1048155d06'
                 productId:
                   type: string
                   example: '334e54wr53'
@@ -157,6 +157,27 @@ paths:
         '400': 
           description: bad request  
   
+    delete:
+      summary: undos a quantity change
+      operationId: undoProductQuantity
+      requestBody:
+        description: undos a quantity change
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idempotencyKey:
+                  type: string
+                  example: '63a1f71147d02b1048155d06'
+      
+      responses:
+        '200':
+          description: The undo operation got processed successfully or no operation exists for the provided idempotency key.
+
+        '400': 
+          description: bad request  
+
   /product/info:
     get:
       summary: get product related informations

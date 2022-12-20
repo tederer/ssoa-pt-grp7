@@ -2,20 +2,20 @@
 
 require('../../common/src/NamespaceUtils.js');
 require('../../common/src/webserver/Webserver.js');
-require('../../common/src/service/Idempotency.js');
+require('../../common/src/service/IdempotentRequest.js');
 
 assertNamespace('webshop.products');
 
 webshop.products.IncrementOperation = function IncrementOperation(settings) {
    
-   const LOGGER                   = webshop.logging.LoggingSystem.createLogger('IncrementOperation');
-   const RESPONSE                 = webshop.webserver.HttpResponses;
-   const { ObjectId }             = require('mongodb');
-   const app                      = settings.app;
-   const database                 = settings.database; 
-   const collectionName           = settings.collectionName; 
-   const pathPrefix               = settings.pathPrefix;
-   const idempotencyChecker       = new webshop.service.Idempotency(database);
+   const LOGGER            = webshop.logging.LoggingSystem.createLogger('IncrementOperation');
+   const RESPONSE          = webshop.webserver.HttpResponses;
+   const { ObjectId }      = require('mongodb');
+   const app               = settings.app;
+   const database          = settings.database; 
+   const collectionName    = settings.collectionName; 
+   const pathPrefix        = settings.pathPrefix;
+   const idempotentRequest = new webshop.service.IdempotentRequest(database);
 
    var assertDatabaseConnected = function assertDatabaseConnected() {
       if (database === undefined) {
@@ -36,6 +36,16 @@ webshop.products.IncrementOperation = function IncrementOperation(settings) {
       }
    };
 
+   var assertValidUndoRequestData = function assertValidUndoRequestData(requestData) {
+      var isValid = (requestData !== undefined)          &&
+      (typeof requestData.idempotencyKey === 'string')   &&
+      (requestData.idempotencyKey.length > 0);
+
+      if(!isValid) {
+         throw 'invalid request data';
+      }
+   };
+
    var incrementQuantity = async function incrementQuantity(requestData) {
       LOGGER.logDebug('increment quantity (requestData=' + JSON.stringify(requestData) + ')');
       assertDatabaseConnected();
@@ -46,7 +56,7 @@ webshop.products.IncrementOperation = function IncrementOperation(settings) {
          var queryById     = {_id: ObjectId(requestData.productId)};
          var increment     = requestData.increment;
 
-         if (await idempotencyChecker.isNewRequest(requestData.idempotencyKey)) {
+         if (await idempotentRequest.add(requestData.idempotencyKey, requestData)) {
             var product = await database.findOne(collectionName, queryById);
             if (product !== null) {
                if (product.quantity + increment < 0) {
@@ -61,7 +71,28 @@ webshop.products.IncrementOperation = function IncrementOperation(settings) {
       });
    };
    
-   app.post(pathPrefix + '/quantity', (request, response) => {
+   var undoIncrementQuantity = async function undoIncrementQuantity(requestData) {
+      LOGGER.logDebug('undo increment quantity (requestData=' + JSON.stringify(requestData) + ')');
+      assertDatabaseConnected();
+      assertValidUndoRequestData(requestData);
+         
+      return database.executeAsTransaction(async function(db) {
+         var modifiedCount = 0;
+         var request       = await idempotentRequest.getAndDelete(requestData.idempotencyKey);
+         
+         if (request !== null) {
+            var queryById = {_id: ObjectId(request.productId)};
+            var product  = await database.findOne(collectionName, queryById);
+            if (product !== null) {
+               modifiedCount = await db.updateOne(collectionName, queryById, {$inc: {quantity: -request.increment}});
+               await db.updateOne(collectionName, queryById, {$set: {lastModification: Date.now()}});
+            }
+         }
+         return modifiedCount;
+      });
+   };
+   
+   app.post(pathPrefix + '/quantity/increment', (request, response) => {
       LOGGER.logDebug(request.method + ' request [path: ' + request.path + ']');
       var requestData = request.body;
       incrementQuantity(requestData)
@@ -73,6 +104,22 @@ webshop.products.IncrementOperation = function IncrementOperation(settings) {
          })
          .catch(error => {
             LOGGER.logError('failed to increment quantity (idempotencyKey=' + requestData.idempotencyKey + '): ' + error);
+            response.status(RESPONSE.BAD_REQUEST).end();
+         });
+   });   
+     
+   app.delete(pathPrefix + '/quantity/increment', (request, response) => {
+      LOGGER.logDebug(request.method + ' request [path: ' + request.path + ']');
+      var requestData = request.body;
+      undoIncrementQuantity(requestData)
+         .then(modifiedCount => {
+            if (modifiedCount > 0) {
+               LOGGER.logInfo('undo performed for incremented quantity operation (idempotencyKey=' + requestData.idempotencyKey + ')');
+            }
+            response.status(RESPONSE.OK).end();
+         })
+         .catch(error => {
+            LOGGER.logError('failed to undo increment quantity operation (idempotencyKey=' + requestData.idempotencyKey + '): ' + error);
             response.status(RESPONSE.BAD_REQUEST).end();
          });
    });   
