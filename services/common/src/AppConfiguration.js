@@ -6,7 +6,7 @@
 
 require('../../common/src/NamespaceUtils.js');
 
-const { AppConfigurationClient } = require("@azure/app-configuration");
+const { AppConfigurationClient } = require('@azure/app-configuration');
 
 assertNamespace('webshop');
 
