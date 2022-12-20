@@ -33,7 +33,6 @@ var createEntityDocument = function createEntityDocument(requestData) {
       firstname:        requestData.firstname,
       lastname:         requestData.lastname,
       credit:           requestData.credit,
-      lastModification: Date.now()
    };
 };
 

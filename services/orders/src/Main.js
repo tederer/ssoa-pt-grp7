@@ -42,7 +42,6 @@ var createEntityDocument = function createEntityDocument(requestData) {
       customerId:       requestData.customerId, 
       cartContent:      [],
       state:            STATES.new.toString(),
-      lastModification: Date.now()
    };
    requestData.cartContent.forEach(content => {
       document.cartContent.push({productId: content.productId, quantity: content.quantity});

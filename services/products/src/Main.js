@@ -33,7 +33,6 @@ var createEntityDocument = function createEntityDocument(requestData) {
       name:             requestData.name, 
       price:            requestData.price,
       quantity:         requestData.quantity,
-      lastModification: Date.now()
    };
    return document;
 };

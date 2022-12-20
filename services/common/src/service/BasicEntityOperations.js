@@ -52,7 +52,11 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
                return {id: previouslyCreatedEntity._id.toString(), createdCount: 0};
             }
             
-            var document   = createEntityDocument(requestData);
+            var document               = createEntityDocument(requestData);
+            var nowInMs                = Date.now();
+            document.creation          = nowInMs;
+            document.lastModification  = nowInMs;
+
             var id         = await db.insert(collectionName, document);
             return {id: id, createdCount: 1};
             
