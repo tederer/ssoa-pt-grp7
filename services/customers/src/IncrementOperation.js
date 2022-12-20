@@ -2,7 +2,7 @@
 
 require('../../common/src/NamespaceUtils.js');
 require('../../common/src/webserver/Webserver.js');
-require('../../common/src/service/Idempotency.js');
+require('../../common/src/service/IdempotentRequest.js');
 
 assertNamespace('webshop.customers');
 
@@ -15,7 +15,7 @@ webshop.customers.IncrementOperation = function IncrementOperation(settings) {
    const database                 = settings.database; 
    const collectionName           = settings.collectionName; 
    const pathPrefix               = settings.pathPrefix;
-   const idempotencyChecker       = new webshop.service.Idempotency(database);
+   const idempotentRequest       = new webshop.service.IdempotentRequest(database);
 
    var assertDatabaseConnected = function assertDatabaseConnected() {
       if (database === undefined) {
@@ -36,6 +36,16 @@ webshop.customers.IncrementOperation = function IncrementOperation(settings) {
       }
    };
 
+   var assertValidUndoRequestData = function assertValidUndoRequestData(requestData) {
+      var isValid = (requestData !== undefined)          &&
+      (typeof requestData.idempotencyKey === 'string')   &&
+      (requestData.idempotencyKey.length > 0);
+
+      if(!isValid) {
+         throw 'invalid request data';
+      }
+   };
+
    var incrementCredit = async function incrementCredit(requestData) {
       LOGGER.logDebug('increment credit (requestData=' + JSON.stringify(requestData) + ')');
       assertDatabaseConnected();
@@ -46,11 +56,11 @@ webshop.customers.IncrementOperation = function IncrementOperation(settings) {
          var queryById     = {_id: ObjectId(requestData.customerId)};
          var increment     = requestData.increment;
 
-         if (await idempotencyChecker.isNewRequest(requestData.idempotencyKey)) {
-            var product = await database.findOne(collectionName, queryById);
-            if (product !== null) {
-               if (product.quantity + increment < 0) {
-                  throw 'cannot increment credit of ' + product._id.toString() + ' by ' + increment + ' because credit will be negative';
+         if (await idempotentRequest.add(requestData.idempotencyKey, requestData)) {
+            var customer = await database.findOne(collectionName, queryById);
+            if (customer !== null) {
+               if (customer.credit + increment < 0) {
+                  throw 'cannot increment credit of ' + customer._id.toString() + ' by ' + increment + ' because credit will be negative';
                } 
                
                modifiedCount = await db.updateOne(collectionName, queryById, {$inc: {credit: increment}});
@@ -60,8 +70,29 @@ webshop.customers.IncrementOperation = function IncrementOperation(settings) {
          return modifiedCount;
       });
    };
+
+   var undoIncrementCredit = async function undoIncrementCredit(requestData) {
+      LOGGER.logDebug('undo increment credit (requestData=' + JSON.stringify(requestData) + ')');
+      assertDatabaseConnected();
+      assertValidUndoRequestData(requestData);
+         
+      return database.executeAsTransaction(async function(db) {
+         var modifiedCount = 0;
+         var request       = await idempotentRequest.getAndDelete(requestData.idempotencyKey);
+         
+         if (request !== null) {
+            var queryById = {_id: ObjectId(request.customerId)};
+            var customer  = await database.findOne(collectionName, queryById);
+            if (customer !== null) {
+               modifiedCount = await db.updateOne(collectionName, queryById, {$inc: {credit: -request.increment}});
+               await db.updateOne(collectionName, queryById, {$set: {lastModification: Date.now()}});
+            }
+         }
+         return modifiedCount;
+      });
+   };
    
-   app.post(pathPrefix + '/credit', (request, response) => {
+   app.post(pathPrefix + '/credit/increment', (request, response) => {
       LOGGER.logDebug(request.method + ' request [path: ' + request.path + ']');
       var requestData = request.body;
       incrementCredit(requestData)
@@ -73,6 +104,22 @@ webshop.customers.IncrementOperation = function IncrementOperation(settings) {
          })
          .catch(error => {
             LOGGER.logError('failed to increment credit (idempotencyKey=' + requestData.idempotencyKey + '): ' + error);
+            response.status(RESPONSE.BAD_REQUEST).end();
+         });
+   });   
+   
+   app.delete(pathPrefix + '/credit/increment', (request, response) => {
+      LOGGER.logDebug(request.method + ' request [path: ' + request.path + ']');
+      var requestData = request.body;
+      undoIncrementCredit(requestData)
+         .then(modifiedCount => {
+            if (modifiedCount > 0) {
+               LOGGER.logInfo('undo performed for incremented credit operation (idempotencyKey=' + requestData.idempotencyKey + ')');
+            }
+            response.status(RESPONSE.OK).end();
+         })
+         .catch(error => {
+            LOGGER.logError('failed to undo increment credit operation (idempotencyKey=' + requestData.idempotencyKey + '): ' + error);
             response.status(RESPONSE.BAD_REQUEST).end();
          });
    });   
