@@ -52,6 +52,15 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName) {
    };
 
    /**
+    * Returns an array containing all documents matching the query.
+    */
+    this.findMany = async function findMany(collectionName, query) {
+      LOGGER.logDebug('find many documents in collection "' + collectionName + '" (query=' + JSON.stringify(query) + ')');
+      assertConnected('findMany');
+      return database.collection(collectionName).find(query).toArray();
+   };
+
+   /**
     * Deletes the first document matching the query.
     * 
     * returns the number of deleted documents
