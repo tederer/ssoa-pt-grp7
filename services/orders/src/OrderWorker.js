@@ -79,27 +79,37 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
       return total;
    };
 
-   var getNextNewOrder = async function getNextNewOrder() {
+   var getNextOrder = async function getNextOrder(stateOfInterest, newState) {
       return database.executeAsTransaction(async function(db) {
-         var order = await db.getLongestUnmodified(collectionName, {state: STATES.new.toString()});
+         var order = await db.getLongestUnmodified(collectionName, {state: stateOfInterest.toString()});
          if (order !== undefined) {
-            setOrderState(order, STATES.inProgress);
+            setOrderState(order, newState);
          }
          return order;
       });
    };
 
-   var assertValidResponse = function assertValidResponse(response, description) {
+   
+   var getNextNewOrder = async function getNextNewOrder() {
+      return getNextOrder(STATES.new, STATES.inProgress);
+   };
+
+   var getNextOrderToUndo = async function getNextOrderToUndo() {
+      return getNextOrder(STATES.readyForUndo, STATES.undo);
+   };
+
+   var assertValidResponse = function assertValidResponse(response, description, order) {
       if (response.statusCode !== RESPONSE.OK) {
+         setOrderState(order, STATES.readyForUndo);
          throw 'failed to ' + description + ': (HTTP status code=' + response.statusCode + ')';
-      };
+      }
    };
 
    var progressNewOrders = async function progressNewOrders() {
       var order = await getNextNewOrder();
       
       while (order !== undefined) {
-         LOGGER.logInfo('processing order ' + order._id);
+         LOGGER.logInfo('processing new order ' + order._id);
          var products       = await queryProductsInCart(order.cartContent);
          var orderTotal     = calculateOrderTotal(order.cartContent, products);
          var idempotencyKey = order._id.toString();
@@ -109,7 +119,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
             customerId:     order.customerId,
             increment:      -orderTotal
          });
-         assertValidResponse(response, 'decrement customer credit');
+         assertValidResponse(response, 'decrement customer credit', order);
          
          for (var i = 0; i < order.cartContent.length; i++) {
             var content = order.cartContent[i];
@@ -118,7 +128,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
                productId:      content.productId,
                increment:      -content.quantity
             });
-            assertValidResponse(response, 'decrement product quantity');
+            assertValidResponse(response, 'decrement product quantity', order);
          }
          
          setOrderState(order, STATES.approved);
@@ -127,7 +137,13 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
    };
 
    var progressReadyForUndoOrders = async function progressReadyForUndoOrders() {
-      // TODO
+      var order = await getNextOrderToUndo();
+      while (order !== undefined) {
+         LOGGER.logInfo('processing undo order ' + order._id);
+         // TODO implement undo
+         setOrderState(order, STATES.rejected);
+         order = await getNextOrderToUndo();
+      }
    };
 
    var startNextIteration = async function startNextIteration() {
