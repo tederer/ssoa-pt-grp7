@@ -10,11 +10,11 @@ webshop.webserver.HttpClient = function HttpClient() {
 
    const TIMEOUT_IN_MS = 10 * 1000;
    
-   var request = async function request(hostname, path, method, stringData) {
+   var request = async function request(hostname, path, method, data) {
       var inputIsValid =    (typeof hostname === 'string')   && 
                             (typeof path     === 'string')   && 
                             (typeof method   === 'string')   && 
-                           ((typeof method   === 'string')   && ((method !== 'POST') || ((method === 'POST') && (typeof stringData !== 'string'))));
+                           ((typeof method   === 'string')   && ((method !== 'POST') || ((method === 'POST') && (data !== undefined))));
 
       if (!inputIsValid) {
          return Promise.reject('at least one argument is not a string');
@@ -29,7 +29,7 @@ webshop.webserver.HttpClient = function HttpClient() {
          };
 
          var isPostRequest = options.method === 'POST';
-         var description   = 'options=' + JSON.stringify(options) + (isPostRequest ? ',data=' + JSON.stringify(stringData) : '');
+         var description   = 'options=' + JSON.stringify(options) + (isPostRequest ? ',data=' + JSON.stringify(data) : '');
 
          var request = http.request(options, response => {
             var data = '';
@@ -42,7 +42,8 @@ webshop.webserver.HttpClient = function HttpClient() {
          request.on('error',   error => reject('request error (' + description + '): ' + error));
          request.on('timeout', error => reject('request timed out (' + description + '): ' + error));
          if (isPostRequest) {
-            request.write(stringData);
+            request.setHeader('Content-Type', 'application/json');
+            request.write(JSON.stringify(data));
          }
          request.end();
       });
@@ -58,11 +59,11 @@ webshop.webserver.HttpClient = function HttpClient() {
    };
 
    /**
-    * Sends a HTTP POST request containing stringData to hostname:path.
+    * Sends a HTTP POST request containing data (as content type "application/json") to hostname:path.
     * 
     * returns an object containing the statusCode and the received data.
     */
-   this.post = async function post(hostname, path, stringData) {
-      return request(hostname, path, 'POST', stringData);
+   this.post = async function post(hostname, path, data) {
+      return request(hostname, path, 'POST', data);
    };
 };
