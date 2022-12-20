@@ -65,7 +65,7 @@ webshop.service.IncrementOperation = function IncrementOperation(settings) {
          var queryById     = {_id: ObjectId(requestData[idFieldName])};
          var increment     = requestData.increment;
 
-         if (await idempotentRequest.add(requestData.idempotencyKey, requestData)) {
+         if (await idempotentRequest.add(requestData.idempotencyKey, requestData[idFieldName], requestData)) {
             var entity = await database.findOne(collectionName, queryById);
             if (entity !== null) {
                if (entity[nameOfFieldToIncrement] + increment < 0) {
@@ -86,9 +86,10 @@ webshop.service.IncrementOperation = function IncrementOperation(settings) {
          
       return database.executeAsTransaction(async function(db) {
          var modifiedCount = 0;
-         var request       = await idempotentRequest.getAndDelete(requestData.idempotencyKey);
+         var requests      = await idempotentRequest.getAndDelete(requestData.idempotencyKey);
          
-         if (request !== null) {
+         for (var i = 0; i < requests.length; i++) {
+            var request   = requests[i];
             var queryById = {_id: ObjectId(request[idFieldName])};
             var entity    = await database.findOne(collectionName, queryById);
             if (entity !== null) {

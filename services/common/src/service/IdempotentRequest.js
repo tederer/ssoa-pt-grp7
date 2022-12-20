@@ -26,12 +26,12 @@ webshop.service.IdempotentRequest = function IdempotentRequest(database) {
     * 
     * returns true if it is a new request, otherwise false
     */
-   this.add = async function add(idempotencyKey, request) {
+   this.add = async function add(idempotencyKey, entityId, request) {
       var isNew = false;
-      var foundRecord = await database.findOne(collectionName, {idempotencyKey: idempotencyKey});
+      var foundRecord = await database.findOne(collectionName, {idempotencyKey: idempotencyKey, entityId: entityId});
       if (foundRecord === null) {
-         await database.insert(collectionName, {idempotencyKey: idempotencyKey, request: request, timestamp: Date.now()});
-         LOGGER.logInfo('added idempotencyKey \"' + idempotencyKey + '\"');
+         await database.insert(collectionName, {idempotencyKey: idempotencyKey, entityId: entityId, request: request, timestamp: Date.now()});
+         LOGGER.logInfo('added idempotencyKey ' + idempotencyKey + ' for entity ' + entityId);
          isNew = true;
       }
       return isNew;
@@ -40,15 +40,18 @@ webshop.service.IdempotentRequest = function IdempotentRequest(database) {
    /**
     * Returns the record with the provided idempotency key and removes it.
     * 
-    * returns the request or null if nothing found for the provided key
+    * returns an array containing all request found for the provided key
     */
     this.getAndDelete = async function getAndDelete(idempotencyKey) {
-      var query       = {idempotencyKey: idempotencyKey};
-      var foundRecord = await database.findOne(collectionName, query);
-      if (foundRecord !== null) {
-         await database.deleteOne(collectionName, query);
+      var query        = {idempotencyKey: idempotencyKey};
+      var foundRecords = await database.findMany(collectionName, query);
+      var requests     = [];
+
+      if (typeof foundRecords === typeof []) {
+         foundRecords.forEach(found => requests.push(found.request));
+         await database.deleteMany(collectionName, query);
       }
-      return (foundRecord !== null) ? foundRecord.request : null;
+      return requests;
    };
 
    removeOldRequests();
