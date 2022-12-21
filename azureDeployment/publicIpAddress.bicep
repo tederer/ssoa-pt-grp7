@@ -4,9 +4,9 @@ resource publicIpAddress 'Microsoft.Network/publicIpAddresses@2020-08-01' = {
   name: 'public-ip'
   location: location
   sku: {
-    name: 'Basic'
+    name: 'Standard'
   }
   properties: {
-    publicIPAllocationMethod: 'Dynamic'
+    publicIPAllocationMethod: 'Static'
   }
 }

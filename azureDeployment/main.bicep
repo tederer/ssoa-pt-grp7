@@ -33,7 +33,6 @@ module vnet 'vnet.bicep' = {
     location:     location
     vnetName:     'vnet'
   }
-  dependsOn:[publicIpAddr]
 }
 
 module database 'database.bicep' = {
@@ -43,7 +42,7 @@ module database 'database.bicep' = {
     location: location
     databaseName: databaseName
   }
-  dependsOn:[vnet]
+  dependsOn:[appConfiguration]
 }
 
 module services 'services.bicep' = {
@@ -53,7 +52,7 @@ module services 'services.bicep' = {
     location:     location
     databaseName: databaseName
   }
-  dependsOn:[database]
+  dependsOn:[vnet, appConfiguration]
 }
 
 module apiGateway 'apiGateway.bicep' = {
@@ -62,5 +61,5 @@ module apiGateway 'apiGateway.bicep' = {
   params:{
     location: location
   }
-  dependsOn:[services]
+  dependsOn:[vnet, services, publicIpAddr]
 }

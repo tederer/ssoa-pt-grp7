@@ -42,8 +42,8 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
   location: location
   properties:{
     sku:{
-      name:'Standard_Small'
-      tier:'Standard'
+      name:'Standard_v2'
+      tier:'Standard_v2'
       capacity: 1
     }
     gatewayIPConfigurations:[
@@ -293,6 +293,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
           urlPathMap:{
             id: resourceId('Microsoft.Network/applicationGateways/urlPathMaps', name, 'urlPathMaps')
           }
+          priority: 300
         }
       }
     ]
