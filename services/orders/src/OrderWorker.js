@@ -11,7 +11,7 @@ require('./States.js');
 
 assertNamespace('webshop.orders');
 
-webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
+webshop.orders.OrderWorker = function OrderWorker(database) {
    const MAX_DURATION_OF_A_SINGLE_PROCESSING_ATTEMPT_IN_MS  = 10000; // TODO take higher value
    const SLEEP_DURATION_IN_MS                               = 1000;
    const LOGGER                                             = webshop.logging.LoggingSystem.createLogger('OrderWorker');
@@ -23,7 +23,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
 
    var setOrderState = async function setOrderState(order, state) {
       LOGGER.logInfo('setting state of order ' + order._id + ' to ' + state.toString());
-      await database.updateOne(collectionName, {_id:  order._id}, {$set: {'state': state.toString(), lastModification: Date.now()}});
+      await database.updateOne({_id:  order._id}, {$set: {'state': state.toString(), lastModification: Date.now()}});
    };
 
    var getApiGatewayIpAddress = async function getApiGatewayIpAddress() {
@@ -40,8 +40,8 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
                   {lastModification:   {$lt: Date.now() - timeoutInMs}} ]
       };
       
-      var modifiedCount = await database.executeAsTransaction(async function(db) {
-         return await db.updateMany(collectionName, query, {$set: {'state': newState.toString(), lastModification: Date.now()}});
+      var modifiedCount = await database.executeAsTransaction(async db => {
+         return await db.updateMany(query, {$set: {'state': newState.toString(), lastModification: Date.now()}});
       });
 
       if (modifiedCount > 0) {
@@ -80,8 +80,8 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
    };
 
    var getNextOrder = async function getNextOrder(stateOfInterest, newState) {
-      return database.executeAsTransaction(async function(db) {
-         var order = await db.getLongestUnmodified(collectionName, {state: stateOfInterest.toString()});
+      return database.executeAsTransaction(async db => {
+         var order = await db.getLongestUnmodified({state: stateOfInterest.toString()});
          if (order !== undefined) {
             setOrderState(order, newState);
          }
@@ -146,7 +146,7 @@ webshop.orders.OrderWorker = function OrderWorker(database, collectionName) {
          var response = await HTTP_CLIENT.delete(await getApiGatewayIpAddress(), '/customer/credit/increment', {idempotencyKey: idempotencyKey});
          assertValidResponse(response, 'undo decrement customer credit', order);
          
-         var response = await HTTP_CLIENT.delete(await getApiGatewayIpAddress(), '/customer/product/increment', {idempotencyKey: idempotencyKey});
+         response = await HTTP_CLIENT.delete(await getApiGatewayIpAddress(), '/product/quantity/increment', {idempotencyKey: idempotencyKey});
          assertValidResponse(response, 'undo decrement product quantity', order);
          
          setOrderState(order, STATES.rejected);

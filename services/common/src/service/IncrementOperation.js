@@ -13,7 +13,6 @@ webshop.service.IncrementOperation = function IncrementOperation(settings) {
    const { ObjectId }           = require('mongodb');
    const app                    = settings.app;
    const database               = settings.database; 
-   const collectionName         = settings.collectionName; 
    const pathPrefix             = settings.pathPrefix;
    const entityName             = settings.entityName;
    const idempotentRequest      = new webshop.service.IdempotentRequest(database);
@@ -60,19 +59,19 @@ webshop.service.IncrementOperation = function IncrementOperation(settings) {
       assertDatabaseConnected();
       assertValidRequestData(requestData);
          
-      return database.executeAsTransaction(async function(db) {
+      return database.executeAsTransaction(async db => {
          var modifiedCount = 0;
          var queryById     = {_id: ObjectId(requestData[idFieldName])};
          var increment     = requestData.increment;
 
-         if (await idempotentRequest.add(requestData.idempotencyKey, requestData[idFieldName], requestData)) {
-            var entity = await database.findOne(collectionName, queryById);
+         if (await idempotentRequest.add(requestData.idempotencyKey, requestData[idFieldName], requestData, db)) {
+            var entity = await db.findOne(queryById);
             if (entity !== null) {
                if (entity[nameOfFieldToIncrement] + increment < 0) {
-                  throw 'cannot increment credit of ' + entity._id.toString() + ' by ' + increment + ' because credit will be negative';
+                  throw 'cannot increment ' + nameOfFieldToIncrement + ' of ' + entity._id.toString() + ' by ' + increment + ' because ' + nameOfFieldToIncrement + ' will be negative';
                } 
-               modifiedCount = await db.updateOne(collectionName, queryById, createUpdateQuery(nameOfFieldToIncrement, increment));
-               await db.updateOne(collectionName, queryById, {$set: {lastModification: Date.now()}});
+               modifiedCount = await db.updateOne(queryById, createUpdateQuery(nameOfFieldToIncrement, increment));
+               await db.updateOne(queryById, {$set: {lastModification: Date.now()}});
             }
          }
          return modifiedCount;
@@ -84,17 +83,17 @@ webshop.service.IncrementOperation = function IncrementOperation(settings) {
       assertDatabaseConnected();
       assertValidUndoRequestData(requestData);
          
-      return database.executeAsTransaction(async function(db) {
+      return database.executeAsTransaction(async db => {
          var modifiedCount = 0;
-         var requests      = await idempotentRequest.getAndDelete(requestData.idempotencyKey);
+         var requests      = await idempotentRequest.getAndDelete(requestData.idempotencyKey, db);
          
          for (var i = 0; i < requests.length; i++) {
             var request   = requests[i];
             var queryById = {_id: ObjectId(request[idFieldName])};
-            var entity    = await database.findOne(collectionName, queryById);
+            var entity    = await db.findOne(queryById);
             if (entity !== null) {
-               modifiedCount = await db.updateOne(collectionName, queryById, createUpdateQuery(nameOfFieldToIncrement, -request.increment));
-               await db.updateOne(collectionName, queryById, {$set: {lastModification: Date.now()}});
+               modifiedCount = await db.updateOne(queryById, createUpdateQuery(nameOfFieldToIncrement, -request.increment));
+               await db.updateOne(queryById, {$set: {lastModification: Date.now()}});
             }
          }
          return modifiedCount;

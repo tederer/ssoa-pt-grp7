@@ -53,8 +53,8 @@ var startup = async function startup() {
    var database;
 
    try {
-      database = await(new webshop.database.AzureCosmosDB(databaseName)).open();
-      new webshop.orders.OrderWorker(database, collectionName);
+      database = await(new webshop.database.AzureCosmosDB(databaseName, collectionName)).open();
+      new webshop.orders.OrderWorker(database);
    } catch(error) {
       LOGGER.logError('failed to start service: ' + error);
       process.exit(1);
@@ -71,7 +71,6 @@ var startup = async function startup() {
       var settings = {
                         app                        : app,
                         database                   : database,        
-                        collectionName             : collectionName,
                         entityName                 : entityName,
                         pathPrefix                 : pathPrefix,
                         creationRequestDataValid   : creationRequestDataValid,

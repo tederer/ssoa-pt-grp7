@@ -12,7 +12,6 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
    const { ObjectId }             = require('mongodb');
    const app                      = settings.app;
    const database                 = settings.database; 
-   const collectionName           = settings.collectionName; 
    const entityName               = settings.entityName;
    const pathPrefix               = settings.pathPrefix;
    const creationRequestDataValid = settings.creationRequestDataValid;
@@ -45,9 +44,9 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
    };
       
    var createEntityIfItDoesNotExist = function createEntityIfItDoesNotExist(requestData) {
-      return async function(db) {
+      return async db => {
          try {
-            var previouslyCreatedEntity = await db.findOne(collectionName, {idempotencyKey: requestData.idempotencyKey});
+            var previouslyCreatedEntity = await db.findOne({idempotencyKey: requestData.idempotencyKey});
             if (previouslyCreatedEntity !== null) {
                return {id: previouslyCreatedEntity._id.toString(), createdCount: 0};
             }
@@ -57,7 +56,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
             document.creation          = nowInMs;
             document.lastModification  = nowInMs;
 
-            var id         = await db.insert(collectionName, document);
+            var id         = await db.insert(document);
             return {id: id, createdCount: 1};
             
          } catch(error) {
@@ -66,14 +65,10 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
       };
    };
 
-   var findAllIds = async function findAllIds(db) {
-      return db.getAllIds(collectionName);
-   };
-   
    var getEntityIfItExists = function getEntityIfItExists(id) {
-      return async function(db) {
+      return async db => {
          try {
-            var foundRecord = await db.findOne(collectionName, {_id: ObjectId(id)});
+            var foundRecord = await db.findOne({_id: ObjectId(id)});
             if (foundRecord !== null) {
                return foundRecord;
             } else {
@@ -95,7 +90,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
    var getEntityIds = async function getEntityIds() {
       LOGGER.logDebug('get ' + entityName + ' IDs');
       assertDatabaseConnected();
-      return database.executeAsTransaction(findAllIds);
+      return database.getAllIds();  // no transaction required because an operation on a single document is atomic
    };
 
    var getEntity = async function getEntity(id) {
@@ -109,7 +104,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
       LOGGER.logDebug('delete ' + entityName + ' (id=' + id + ')');
       assertDatabaseConnected();
       assertValidEntityId(id);
-      return database.deleteOne(collectionName, {_id: ObjectId(id)}); // no transaction required because CRUD-operations are atomic in MongoDB
+      return database.deleteOne({_id: ObjectId(id)}); // no transaction required because an operation on a single document is atomic
    };
 
    app.post(pathPrefix, (request, response) => {
@@ -123,7 +118,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
             response.status(RESPONSE.OK).json({id: result.id});
          })
          .catch(error => {
-            LOGGER.logError('failed to create new ' + entityName + ': ' + error);
+            LOGGER.logError(error);
             response.status(RESPONSE.BAD_REQUEST).end();
          });
    });
