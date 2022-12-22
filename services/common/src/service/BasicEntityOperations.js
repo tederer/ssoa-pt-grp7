@@ -16,7 +16,8 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
    const pathPrefix               = settings.pathPrefix;
    const creationRequestDataValid = settings.creationRequestDataValid;
    const createEntityDocument     = settings.createEntityDocument;
-   
+   const ENTITY                   = 'entity';
+
    var assertDatabaseConnected = function assertDatabaseConnected() {
       if (database === undefined) {
          throw 'database not (yet) connected -> cannot execute operatation (Did you forget to call the start-method?)';
@@ -53,6 +54,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
             
             var document               = createEntityDocument(requestData);
             var nowInMs                = Date.now();
+            document.type              = ENTITY;
             document.creation          = nowInMs;
             document.lastModification  = nowInMs;
 
@@ -68,7 +70,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
    var getEntityIfItExists = function getEntityIfItExists(id) {
       return async db => {
          try {
-            var foundRecord = await db.findOne({_id: ObjectId(id)});
+            var foundRecord = await db.findOne({type: ENTITY, _id: ObjectId(id)});
             if (foundRecord !== null) {
                return foundRecord;
             } else {
@@ -90,7 +92,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
    var getEntityIds = async function getEntityIds() {
       LOGGER.logDebug('get ' + entityName + ' IDs');
       assertDatabaseConnected();
-      return database.getAllIds();  // no transaction required because an operation on a single document is atomic
+      return database.getAllEntityIds();  // no transaction required because an operation on a single document is atomic
    };
 
    var getEntity = async function getEntity(id) {
@@ -104,7 +106,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
       LOGGER.logDebug('delete ' + entityName + ' (id=' + id + ')');
       assertDatabaseConnected();
       assertValidEntityId(id);
-      return database.deleteOne({_id: ObjectId(id)}); // no transaction required because an operation on a single document is atomic
+      return database.deleteOne({type: ENTITY, _id: ObjectId(id)}); // no transaction required because an operation on a single document is atomic
    };
 
    app.post(pathPrefix, (request, response) => {

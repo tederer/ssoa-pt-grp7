@@ -33,6 +33,7 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName, collection
    const mongodb     = require('mongodb');
    const LOGGER      = webshop.logging.LoggingSystem.createLogger('AzureCosmosDB');
    const NO_SESSION  = undefined;
+   const ENTITY      = 'entity';
 
    var mongoClient;
 	var database;
@@ -90,10 +91,10 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName, collection
       return (await database.collection(collectionName).updateMany(query, update, createOptions(session))).modifiedCount;
    };
 
-   var getAllIdsImpl = async function getAllIdsImpl(session) {
+   var getAllEntityIdsImpl = async function getAllEntityIdsImpl(session) {
       LOGGER.logDebug('return all IDs');
-      assertConnected('getAllIds');
-      return database.collection(collectionName).find({}, createOptions(session)).map(doc => doc._id.toString()).toArray();
+      assertConnected('getAllEntityIds');
+      return database.collection(collectionName).find({type: ENTITY}, createOptions(session)).map(doc => doc._id.toString()).toArray();
    };
 
    var getLongestUnmodifiedImpl = async function getLongestUnmodifiedImpl(session, query) {
@@ -177,8 +178,8 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName, collection
    /**
     * Returns an array containing the ID of each document in the collection
     */
-   this.getAllIds = async function getAllIds() {
-      return getAllIdsImpl(NO_SESSION);
+   this.getAllEntityIds = async function getAllEntityIds() {
+      return getAllEntityIdsImpl(NO_SESSION);
    };
 
    /**
@@ -200,7 +201,7 @@ webshop.database.AzureCosmosDB = function AzureCosmosDB(databaseName, collection
          deleteMany          : deleteManyImpl.bind(this, session),
          updateOne           : updateOneImpl.bind(this, session),
          updateMany          : updateManyImpl.bind(this, session),
-         getAllIds           : getAllIdsImpl.bind(this, session),
+         getAllEntityIds           : getAllEntityIdsImpl.bind(this, session),
          getLongestUnmodified: getLongestUnmodifiedImpl.bind(this, session)
       };
    };

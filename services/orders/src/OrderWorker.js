@@ -128,7 +128,7 @@ webshop.orders.OrderWorker = function OrderWorker(database) {
                productId:      content.productId,
                increment:      -content.quantity
             });
-            assertValidResponse(response, 'decrement product quantity', order);
+            assertValidResponse(response, 'decrement product (' + content.productId + ') quantity', order);
          }
          
          setOrderState(order, STATES.approved);
