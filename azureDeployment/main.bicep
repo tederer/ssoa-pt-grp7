@@ -42,7 +42,7 @@ module database 'database.bicep' = {
     location: location
     databaseName: databaseName
   }
-  dependsOn:[appConfiguration]
+  dependsOn:[vnet, appConfiguration]
 }
 
 module services 'services.bicep' = {
@@ -52,7 +52,7 @@ module services 'services.bicep' = {
     location:     location
     databaseName: databaseName
   }
-  dependsOn:[vnet, appConfiguration]
+  dependsOn:[database]
 }
 
 module apiGateway 'apiGateway.bicep' = {
