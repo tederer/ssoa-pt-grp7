@@ -109,8 +109,17 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
       return database.deleteOne({type: ENTITY, _id: ObjectId(id)}); // no transaction required because an operation on a single document is atomic
    };
 
+   var setResponseHeader = function setResponseHeader(response, allowCors) {
+      var headers = {'Content-Type': 'application/json'};
+      if (allowCors) {
+         headers['Access-Control-Allow-Origin'] = '*';
+      }
+      response.set(headers);
+   };
+
    app.post(pathPrefix, (request, response) => {
       logRequest(request);
+      setResponseHeader(response);
       
       createEntity(request.body)
          .then(result => {
@@ -127,6 +136,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
 
    app.get(pathPrefix, (request, response) => {
       logRequest(request);
+      setResponseHeader(response, true);
       
       getEntityIds()
          .then(result => response.status(RESPONSE.OK).json(result))
@@ -138,6 +148,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
 
    app.get(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
       logRequest(request);
+      setResponseHeader(response, true);
       var id = getEntityId(request);
       
       getEntity(id)
@@ -150,6 +161,7 @@ webshop.service.BasicEntityOperations = function BasicEntityOperations(settings)
 
    app.delete(new RegExp(pathPrefix + '\/byid\/[^\/]+'), (request, response) => {
       logRequest(request);
+      setResponseHeader(response);
       var id = getEntityId(request);
       
       deleteEntity(id)
