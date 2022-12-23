@@ -143,7 +143,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         name: 'orderProbe'
         properties:{
           protocol:'Http'
-          host: productsService.properties.ipAddress.ip
+          host: ordersService.properties.ipAddress.ip
           path: '/order/info'
           interval: 30
           timeout: 30
@@ -154,7 +154,7 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         name: 'customerProbe'
         properties:{
           protocol:'Http'
-          host: productsService.properties.ipAddress.ip
+          host: customersService.properties.ipAddress.ip
           path: '/customer/info'
           interval: 30
           timeout: 30
