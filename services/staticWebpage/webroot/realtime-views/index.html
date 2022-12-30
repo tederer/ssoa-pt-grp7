@@ -8,36 +8,27 @@
    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
    <script src="../javascript/EntityViewer.js"></script>
    <script>
+      var createConfig = function createConfig(entityName, columnNames) {
+         return {
+            entityName:          entityName,
+            decriptionId:        'description',       
+            tableHeadId:         'tableHead',
+            tableBodyId:         'tableBody',
+            lastModificationId:  'lastModification',
+            columnNames:         columnNames
+         };
+      };
+
       var config = {
-         products:   {
-                        entityName:          'product',
-                        decriptionId:        'description',       
-                        tableHeadId:         'tableHead',
-                        tableBodyId:         'tableBody',
-                        lastModificationId:  'lastModification',
-                        columnNames:         ['_id', 'name', 'price', 'quantity']
-                     },
-         customers:  {
-                        entityName:          'customer',
-                        decriptionId:        'description',       
-                        tableHeadId:         'tableHead',
-                        tableBodyId:         'tableBody',
-                        lastModificationId:  'lastModification',
-                        columnNames:         ['_id', 'firstname', 'lastname', 'credit']
-                     },
-         orders:     {
-                        entityName:          'order',
-                        decriptionId:        'description',       
-                        tableHeadId:         'tableHead',
-                        tableBodyId:         'tableBody',
-                        lastModificationId:  'lastModification',
-                        columnNames:         ['_id', 'customerId', 'state']
-                     }
+         products:   createConfig('product', ['_id', 'name',       'price',    'quantity']),
+         customers:  createConfig('customer',['_id', 'firstname',  'lastname', 'credit']),
+         orders:     createConfig('order',   ['_id', 'customerId', 'state'])
       };
 
       if (location.search.length > 0) {
          var instanceName = location.search.substring(1);
-         var settings = config[instanceName];
+         var settings     = config[instanceName];
+         
          if (settings !== undefined) {
             new EntityViewer(config[instanceName]);
          } else {
