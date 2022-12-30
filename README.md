@@ -15,7 +15,7 @@ The following diagram illustrates the internal structure of the application.
 
 ![arquitecture](images/architecture.drawio.svg)
 
-Everything is implemented in Javascript andach service (including the static webpage) uses [Node.js](https://nodejs.org) and [Express](http://expressjs.com) on top of it. The implemented scenario is shown in the following diagram.
+Everything is implemented in Javascript and each service (including the static webpage) uses [Node.js](https://nodejs.org) and [Express](http://expressjs.com) on top of it. The implemented scenario is shown in the following diagram.
 
 ![sequence diagram](images/sequencediagram.drawio.svg)
 
@@ -38,6 +38,7 @@ To deploy the application, the following steps are necessary ...
 * In the "OUTPUT" tab of Visual Studio Code you'll find an URL pointing you to the deployment status page of Azure. Move your mouse over the URL and click on "Follow link".
 
 ![follow link to azure](images\vsc_followLink.jpg)
+
 * Wait a few minutes till Azure tells you that the deployment finished.
 
 A detailed description how to use the BICEP extension of Visual Studio Code is available [here](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-vscode).
@@ -57,7 +58,7 @@ To use the application you first need to get the public IP address. There are th
 
 When you enter the IP address into your address field of your web browser you'll get the following webpage.
 
-![main webpage](images\mainPage.jpg)
+![main webpage](images/mainPage.jpg)
 
 The real-time views poll the data of the corresponding service every second and display them in a human readable way. 
 
