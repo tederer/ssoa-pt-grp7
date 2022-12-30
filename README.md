@@ -37,7 +37,7 @@ To deploy the application, the following steps are necessary ...
 * Follow the menu provided by the BICEP extension.
 * In the "OUTPUT" tab of Visual Studio Code you'll find an URL pointing you to the deployment status page of Azure. Move your mouse over the URL and click on "Follow link".
 
-![follow link to azure](images\vsc_followLink.jpg)
+![follow link to azure](images/vsc_followLink.jpg)
 
 * Wait a few minutes till Azure tells you that the deployment finished.
 
