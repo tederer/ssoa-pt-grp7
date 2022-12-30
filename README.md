@@ -64,14 +64,27 @@ The real-time views poll the data of the corresponding service every second and 
 
 The Swagger links point to the [Swagger UI](https://swagger.io/tools/swagger-ui/) pages of the corresponding service to interact with it.
 
-## running services locally
+## running services locally (Linux)
 
 To run one of the services locally in e.g. a Linux VM you need to ...
 * Deploy at least the database and the App Configuration. This can be done by commenting out the last module (the API gateway) in *azureDeployment\main.bicep* and deploy it in the same way as described in the section "deployment".
 * While the deployment is running, clone this repository and wait till the deployment finished successfully. 
-* Open the  of the Azure App Configuration and look for the value of "APP_CONFIG_CONNECTION_STRING".
+* Open the "Configuration explorer" tab of the Azure App Configuration and look for the value of "APP_CONFIG_CONNECTION_STRING".
 * Set the environment variable APP_CONFIG_CONNECTION_STRING to the value you found in the Azure App Configuration.
-* Run startService.sh or startService.bat and provide as first argument the name of the service you want to start (one of: "webserver", "customers", "orders", "products").
+* Run startService.sh and provide as first argument the name of the service you want to start (one of: "webserver", "customers", "orders", "products").
+
+## running services locally (Windows)
+
+To run one of the services locally on Windows you need to ...
+* Deploy at least the database and the App Configuration. This can be done by commenting out the last module (the API gateway) in *azureDeployment\main.bicep* and deploy it in the same way as described in the section "deployment".
+* While the deployment is running, clone this repository and wait till the deployment finished successfully. 
+* Open the "Configuration explorer" tab of the Azure App Configuration and look for the value of "APP_CONFIG_CONNECTION_STRING".
+* Set the environment variable APP_CONFIG_CONNECTION_STRING to the value you found in the Azure App Configuration.
+* Execute openCliHere.bat (it will complain that grunt is missing)
+* Execute "npm install" to install all dependencies.
+* Close the command line box.
+* Execute openCliHere.bat once again.
+* Take the path to the main file from services.cfg and provide it as first argument to "node" (e.g. "node services/products/src/Main.js").
 
 ## removing the deployed components
 
