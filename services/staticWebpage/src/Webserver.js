@@ -49,18 +49,18 @@ var sendInternalServerError = function sendInternalServerError(response, text) {
 };
  
 var handleFileRequests = function handleFileRequests(request, response) {
-   var requestedDocumentUrl  = request.url;
-   var absolutePathOfRequest = webRootFolder + requestedDocumentUrl;
+   var requestedDocumentPath  = request.path;
+   var absolutePathOfRequest = webRootFolder + requestedDocumentPath;
    
-   LOGGER.logDebug('request (url=' + requestedDocumentUrl + ',absolutePath=' + absolutePathOfRequest + ')');
+   LOGGER.logDebug('request (path=' + requestedDocumentPath + ',absolutePath=' + absolutePathOfRequest + ')');
 
    if (absolutePathOfRequest.endsWith('/')) {
       absolutePathOfRequest += DEFAULT_INDEX_FILE;
    } 
    
    if (!fs.existsSync(absolutePathOfRequest)) {  
-      LOGGER.logInfo('requested file \"' + requestedDocumentUrl + '\" does not exist -> sending internal server error (absolutePathOfRequest=' + absolutePathOfRequest + ')'); 
-      sendInternalServerError(response, requestedDocumentUrl + ' does not exist');
+      LOGGER.logInfo('requested file \"' + requestedDocumentPath + '\" does not exist -> sending internal server error (absolutePathOfRequest=' + absolutePathOfRequest + ')'); 
+      sendInternalServerError(response, requestedDocumentPath + ' does not exist');
    } else {
       LOGGER.logDebug('returning ' + absolutePathOfRequest);
       response.sendFile(absolutePathOfRequest);
