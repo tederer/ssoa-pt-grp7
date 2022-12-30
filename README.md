@@ -66,7 +66,12 @@ The Swagger links point to the [Swagger UI](https://swagger.io/tools/swagger-ui/
 
 ## running services locally
 
-To run one of the services locally in e.g. a Linux VM you need to deploy at least the database and the App Configuration. This can be done by commenting out the last module (the API gateway) in *azureDeployment\main.bicep* and deploy it in the same way as described in the section "deployment".
+To run one of the services locally in e.g. a Linux VM you need to ...
+* Deploy at least the database and the App Configuration. This can be done by commenting out the last module (the API gateway) in *azureDeployment\main.bicep* and deploy it in the same way as described in the section "deployment".
+* While the deployment is running, clone this repository and wait till the deployment finished successfully. 
+* Open the  of the Azure App Configuration and look for the value of "APP_CONFIG_CONNECTION_STRING".
+* Set the environment variable APP_CONFIG_CONNECTION_STRING to the value you found in the Azure App Configuration.
+* Run startService.sh or startService.bat and provide as first argument the name of the service you want to start (one of: "webserver", "customers", "orders", "products").
 
 ## removing the deployed components
 
