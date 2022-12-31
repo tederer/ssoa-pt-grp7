@@ -1,30 +1,33 @@
 param location string
 
-var name = 'API-gateway'
+var apiGatewayName = 'API-gateway'
+
+var services = [
+  {
+    name:             'webserver'
+    routingPath:      ''
+    healthProbePath:  '/info'
+  }
+  {
+    name:             'orders'
+    routingPath:      '/order*'
+    healthProbePath:  '/order/info'
+  }
+  {
+    name:             'customers'
+    routingPath:      '/customer*'
+    healthProbePath:  '/customer/info'
+  }
+  {
+    name:             'products'
+    routingPath:      '/product*'
+    healthProbePath:  '/product/info'
+  }
+]
 
 resource vnetSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
   scope: resourceGroup()
   name: 'vnet/apiGatewaySubnet'
-}
-
-resource webserverService 'Microsoft.ContainerInstance/containerGroups@2021-10-01' existing = {
-  scope: resourceGroup()
-  name: 'webserver-service'
-}
-
-resource productsService 'Microsoft.ContainerInstance/containerGroups@2021-10-01' existing = {
-  scope: resourceGroup()
-  name: 'products-service'
-}
-
-resource ordersService 'Microsoft.ContainerInstance/containerGroups@2021-10-01' existing = {
-  scope: resourceGroup()
-  name: 'orders-service'
-}
-
-resource customersService 'Microsoft.ContainerInstance/containerGroups@2021-10-01' existing = {
-  scope: resourceGroup()
-  name: 'customers-service'
 }
 
 resource publicIpAddress 'Microsoft.Network/publicIpAddresses@2020-08-01' existing = {
@@ -38,7 +41,7 @@ resource appConfig 'Microsoft.AppConfiguration/configurationStores@2022-05-01' e
 }
 
 resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
-  name: name
+  name: apiGatewayName
   location: location
   properties:{
     sku:{
@@ -74,97 +77,29 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         }
       }
     ]
-    backendAddressPools:[
-      {
-        name: 'webserverPool'
+    backendAddressPools:[for service in services: {
+        name: concat(service.name, 'Pool')
         properties:{
           backendAddresses:[
             {
-              ipAddress: webserverService.properties.ipAddress.ip
+              ipAddress: reference(resourceId('Microsoft.ContainerInstance/containerGroups', concat(service.name, '-service')), '2021-10-01').ipAddress.ip
             }
           ]
         }
-      }
-      {
-        name: 'productPool'
-        properties:{
-          backendAddresses:[
-            {
-              ipAddress: productsService.properties.ipAddress.ip
-            }
-          ]
-        }
-      }
-      {
-        name: 'orderPool'
-        properties:{
-          backendAddresses:[
-            {
-              ipAddress: ordersService.properties.ipAddress.ip
-            }
-          ]
-        }
-      }
-      {
-        name: 'customerPool'
-        properties:{
-          backendAddresses:[
-            {
-              ipAddress: customersService.properties.ipAddress.ip
-            }
-          ]
-        }
-      }
-    ]
-     probes:[
-      {
-        name: 'webserverProbe'
+    }]
+    probes: [for service in services: {
+        name: concat(service.name, 'Probe')
         properties:{
           protocol:'Http'
-          host: webserverService.properties.ipAddress.ip
-          path: '/info'
+          host: reference(resourceId('Microsoft.ContainerInstance/containerGroups', concat(service.name, '-service')), '2021-10-01').ipAddress.ip
+          path: service.healthProbePath
           interval: 30
           timeout: 30
           unhealthyThreshold: 3
         }
-      }
-      {
-        name: 'productProbe'
-        properties:{
-          protocol:'Http'
-          host: productsService.properties.ipAddress.ip
-          path: '/product/info'
-          interval: 30
-          timeout: 30
-          unhealthyThreshold: 3
-        }
-      }
-      {
-        name: 'orderProbe'
-        properties:{
-          protocol:'Http'
-          host: ordersService.properties.ipAddress.ip
-          path: '/order/info'
-          interval: 30
-          timeout: 30
-          unhealthyThreshold: 3
-        }
-      }
-      {
-        name: 'customerProbe'
-        properties:{
-          protocol:'Http'
-          host: customersService.properties.ipAddress.ip
-          path: '/customer/info'
-          interval: 30
-          timeout: 30
-          unhealthyThreshold: 3
-        }
-      }
-     ]
-    backendHttpSettingsCollection: [
-      {
-        name: 'webserverBackendHTTPSetting'
+    }]
+    backendHttpSettingsCollection: [for service in services: {
+        name: concat(service.name, 'BackendHTTPSetting')
         properties: {
           port: 80
           protocol: 'Http'
@@ -172,59 +107,19 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
           pickHostNameFromBackendAddress: false
           requestTimeout: 20
            probe: {
-             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'webserverProbe')
+             id: resourceId('Microsoft.Network/applicationGateways/probes', apiGatewayName, concat(service.name, 'Probe'))
            }
         }
-      }
-      {
-        name: 'productsBackendHTTPSetting'
-        properties: {
-          port: 80
-          protocol: 'Http'
-          cookieBasedAffinity: 'Disabled'
-          pickHostNameFromBackendAddress: false
-          requestTimeout: 20
-           probe: {
-             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'productProbe')
-           }
-        }
-      }
-      {
-        name: 'ordersBackendHTTPSetting'
-        properties: {
-          port: 80
-          protocol: 'Http'
-          cookieBasedAffinity: 'Disabled'
-          pickHostNameFromBackendAddress: false
-          requestTimeout: 20
-           probe: {
-             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'orderProbe')
-           }
-        }
-      }
-      {
-        name: 'customersBackendHTTPSetting'
-        properties: {
-          port: 80
-          protocol: 'Http'
-          cookieBasedAffinity: 'Disabled'
-          pickHostNameFromBackendAddress: false
-          requestTimeout: 20
-           probe: {
-             id: resourceId('Microsoft.Network/applicationGateways/probes', name, 'customerProbe')
-           }
-        }
-      }
-    ]
+    }]
     httpListeners: [
       {
         name: 'httpListener'
         properties: {
           frontendIPConfiguration: {
-            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', name, 'frontendIpConfig')
+            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', apiGatewayName, 'frontendIpConfig')
           }
           frontendPort: {
-            id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', name, 'port_80')
+            id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', apiGatewayName, 'port_80')
           }
           protocol: 'Http'
           requireServerNameIndication: false
@@ -236,49 +131,23 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         name: 'urlPathMaps'
         properties:{
           defaultBackendHttpSettings:{
-            id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'webserverBackendHTTPSetting')
+            id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', apiGatewayName, 'webserverBackendHTTPSetting')
           }
           defaultBackendAddressPool: {
-            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'webserverPool')
+            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', apiGatewayName, 'webserverPool')
           }
-          pathRules:[
-            {
-              name: 'productsPathRule'
-              properties:{
-                paths:['/product*']
-                backendAddressPool: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'productPool')
-                }
-                backendHttpSettings: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'productsBackendHTTPSetting')
-                }      
+          pathRules: [for service in skip(services, 1): {
+            name: concat(service.name, 'PathRule')
+            properties:{
+              paths:[service.routingPath]
+              backendAddressPool: {
+                id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', apiGatewayName, concat(service.name, 'Pool'))
               }
+              backendHttpSettings: {
+                id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', apiGatewayName, concat(service.name, 'BackendHTTPSetting'))
+              }      
             }
-            {
-              name: 'ordersPathRule'
-              properties:{
-                paths:['/order*']
-                backendAddressPool: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'orderPool')
-                }
-                backendHttpSettings: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'ordersBackendHTTPSetting')
-                }      
-              }
-            }
-            {
-              name: 'customersPathRule'
-              properties:{
-                paths:['/customer*']
-                backendAddressPool: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', name, 'customerPool')
-                }
-                backendHttpSettings: {
-                  id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', name, 'customersBackendHTTPSetting')
-                }      
-              }
-            }
-          ]
+          }]
         }
       }
     ]
@@ -288,10 +157,10 @@ resource apiGateway 'Microsoft.Network/applicationGateways@2022-05-01' = {
         properties:{
           ruleType: 'PathBasedRouting'
           httpListener:{
-            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', name, 'httpListener')
+            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', apiGatewayName, 'httpListener')
           }
           urlPathMap:{
-            id: resourceId('Microsoft.Network/applicationGateways/urlPathMaps', name, 'urlPathMaps')
+            id: resourceId('Microsoft.Network/applicationGateways/urlPathMaps', apiGatewayName, 'urlPathMaps')
           }
           priority: 300
         }
