@@ -19,6 +19,10 @@ Everything is implemented in Javascript and each service (including the static w
 
 ![sequence diagram](images/sequencediagram.drawio.svg)
 
+Each order gets processed by an orders service instance and the state of each order changes according to the following diagram.
+
+![order state diagram](images/order_state_diagram.drawio.svg)
+
 ## deployment
 
 The code of all 4 services is available in this repository. We know that it is not best practice to have them all together in the same repository but it made it much easier to get the project up and running in the limited time we had. In a "real" productive system each service and also commonly used code would be in seperate repositories and each service would get its own docker image.
