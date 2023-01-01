@@ -39,7 +39,7 @@ To deploy the application, the following steps are necessary ...
 
 ![follow link to azure](images/vsc_followLink.jpg)
 
-* Wait a few minutes till Azure tells you that the deployment finished.
+* Wait a few minutes (about 10 - 15) till Azure tells you that the deployment finished.
 
 A detailed description how to use the BICEP extension of Visual Studio Code is available [here](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-vscode).
 
