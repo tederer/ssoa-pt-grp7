@@ -1,6 +1,6 @@
 # Demo implementation of 4 microservices
 
-This project contains a demo implementation of 4 micro services. Together they fullfill the following functional requirements:
+This project contains a demo implementation of 4 micro services. Together they fulfill the following functional requirements:
 
 * customers should be able to order products
 * each customer should have an individual credit limit
@@ -45,7 +45,7 @@ A detailed description how to use the BICEP extension of Visual Studio Code is a
 
 ## known deployment problems
 
-In the past sometimes run into the problem that Azure cancels the deployment with the statement "Network is not ready for container group 'products-service'. Please try again.". In such a sitation repeating the deployment solves the problem.
+Sporadically Azure cancels the deployment with the statement "Network is not ready for container group 'products-service'. Please try again.". In such a sitation repeating the deployment solves the problem. You don't have to remove any resources in Azure.
 
 The deployment will fail, when somebody else already deployed it to Azure. The reson for this is the name of the Azure AppConfiguration Service, which has to be unique in Azure and you need to change it in *azureDeployment/appConfiguration.bicep* if the deployment fails.
 
@@ -88,4 +88,4 @@ To run one of the services locally on Windows you need to ...
 
 ## removing the deployed components
 
-The fastes way to remove all deployed resources in Azure is to delete the resource group "rg-demoproject", which got created by the deployment of this project and contains all its resources. 
+The fastest way to remove all deployed resources in Azure is to delete the resource group "rg-demoproject", which got created by the deployment of this project and contains all its resources. 
