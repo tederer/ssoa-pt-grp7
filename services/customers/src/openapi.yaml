@@ -38,10 +38,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  orderId:
+                  id:
                     type: string
-                example:
-                  - customerId: "1234ed2"
+                    example: '55a1f035529e1e68265bb111'
                   
         '400':
           description: Cannot accept the customer.
@@ -82,12 +81,30 @@ paths:
               schema:
                 type: object
                 properties:
+                  _id:
+                    type: string
+                    example: '55a1f035529e1e68265bb111'
+                  idempotencyKey:
+                    type: string
+                    example: '989b53b1b5c5bc71012f4123'
                   firstname:
                     type: string
                     example: 'Max'
                   lastname:
                     type: string
                     example: 'Mustermann'
+                  credit:
+                    type: number
+                    example: 500
+                  type:
+                    type: string
+                    example: 'entity'
+                  creation:
+                    type: number
+                    example: 1672938959291
+                  lastModification:
+                    type: number
+                    example: 1672938959291
         
         '400': 
           description: customer not found  
@@ -130,7 +147,7 @@ paths:
                   example: '63a1f035529e1e68265bb284'
                 customerId:
                   type: string
-                  example: '334e54wr53'
+                  example: '55a1f035529e1e68265bb111'
                 increment:
                   type: number
                   example: -70
@@ -163,9 +180,9 @@ paths:
         '400': 
           description: bad request  
 
-  /customer/info:
+  /product/info:
     get:
-      summary: get service related informations
+      summary: get product related informations
       description: Returns the version, url path prefix and startup time of the service. This path is also used to satifsy the health probe of the Azure Application Gateway.
       operationId: getServiceInfo
       responses:
@@ -178,14 +195,10 @@ paths:
                 properties:
                   version:
                     type: string
+                    example: '1.0.0'
                   pathPrefix:
                     type: string
+                    example: '/customer'
                   start:
                     type: string
-                example:
-                  - version: "1.0.0"
-                    pathPrefix: '/product'
-                    start: "2022-11-28T18:21:34.846Z"
-        
-  
-  
+                    example: '2022-11-28T18:21:34.846Z'

@@ -40,10 +40,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  productId:
+                  id:
                     type: string
-                example:
-                  - productId: "1234ed2"
+                    example: "63a1f82a2006becc88af136b"
                   
         '400':
           description: Cannot accept the product.
@@ -61,12 +60,8 @@ paths:
               schema:
                 type: array
                 items: 
-                  type: object
-                  properties:
-                    orderId: 
-                      type: string
-                  example:
-                    - orderId: '123e4'       
+                  type: string
+                  example: '63a1f82a2006becc88af136b'       
     
   /product/byid/{productId}:        
     get:
@@ -89,6 +84,9 @@ paths:
               schema:
                 type: object
                 properties:
+                  _id:
+                    type: string
+                    example: '639b53b1b5cbbc71012f4084'
                   idempotencyKey:
                     type: string
                     example: '63a1f82a2006becc88af136b'
@@ -103,6 +101,15 @@ paths:
                     description: number of available pieces
                     type: integer
                     example: 15
+                  type:
+                    type: string
+                    example: 'entity'
+                  creation:
+                    type: number
+                    example: 1672938959291
+                  lastModification:
+                    type: number
+                    example: 1672938959291
         
         '400': 
           description: product not found  
@@ -193,13 +200,10 @@ paths:
                 properties:
                   version:
                     type: string
+                    example: '1.0.0'
                   pathPrefix:
                     type: string
+                    example: '/product'
                   start:
                     type: string
-                example:
-                  - version: "1.0.0"
-                    pathPrefix: '/product'
-                    start: "2022-11-28T18:21:34.846Z"
-        
-  
+                    example: '2022-11-28T18:21:34.846Z'
