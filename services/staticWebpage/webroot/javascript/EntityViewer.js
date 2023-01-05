@@ -23,7 +23,7 @@ var EntityViewer = function EntityViewer(settings) {
       });
    };
 
-   var refreshTableBody = function refreshTableBody(entities) {
+   var refreshUI = function refreshUI(entities, lastModification, pollingFailed) {
       var bodyHtml = '';
       entities.forEach(entity => {
          bodyHtml += '<tr>';
@@ -32,8 +32,12 @@ var EntityViewer = function EntityViewer(settings) {
          });
          bodyHtml += '</tr>';
       });
-      bodyHtml += '</tr>';
       $('#' + tableBodyId).html(bodyHtml);
+
+      var isValidTimestamp     = (typeof lastModification === 'number') && (lastModification > 0);
+      var timestamp            = isValidTimestamp ? (new Date(lastModification)).toLocaleString() : 'n.a.';
+      var lastModificationText = ((typeof pollingFailed === 'boolean') && pollingFailed) ? 'polling failed' : timestamp;
+      $('#' + lastModificationId).text(lastModificationText);
    };
 
    var initializeDocumentTitle = function initializeDocumentTitle() {
@@ -76,12 +80,18 @@ var EntityViewer = function EntityViewer(settings) {
    };
 
    var refreshData = async function refreshData() {
-      var entities = await getEntities();
-      if (refreshRequired(entities)) {
-         refreshTableBody(entities.data);
+      try {
+         var entities = await getEntities();
+         if (refreshRequired(entities)) {
+            refreshUI(entities.data, entities.lastModification);
+         }
+      } catch(e) {
+         console.log(e);
+         lastModificationInUse = undefined;
+         lastEntityIdsInUse    = [];
+         refreshUI([], undefined, true);
       }
-      var timestamp = (entities.lastModification > 0) ? (new Date(entities.lastModification)).toLocaleString() : 'n.a.';
-      $('#' + lastModificationId).text(timestamp);
+
       setTimeout(refreshData, REFRESH_INTERVAL_IN_MS);
    };
 
