@@ -15,11 +15,7 @@ var EntityViewer = function EntityViewer(settings) {
 
    var httpGet = async function httpGet(path) {
       return new Promise((resolve, reject) => {
-         try {
-            $.get(path, data => resolve( data ));
-         } catch(e) {
-            reject(e);
-         }
+         $.get(path, data => resolve( data )).fail(e => reject(e));
       });
    };
 
