@@ -180,7 +180,7 @@ paths:
         '400': 
           description: bad request  
 
-  /product/info:
+  /customer/info:
     get:
       summary: get product related informations
       description: Returns the version, url path prefix and startup time of the service. This path is also used to satifsy the health probe of the Azure Application Gateway.
