@@ -53,6 +53,8 @@ Sporadically Azure cancels the deployment with the statement "Network is not rea
 
 The deployment will fail, when somebody else already deployed it to Azure. The reson for this is the name of the Azure AppConfiguration Service, which has to be unique in Azure and you need to change it in *azureDeployment/appConfiguration.bicep* if the deployment fails.
 
+Attention is required when restarting Container instances. In the [documentation](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-application-gateway) Microsoft states "If the container group is stopped, started, or restarted, the container group's private IP is subject to change. If this happens, you will need to update the application gateway configuration.". To avoid unpredictable behavior, each constainer instance has its own subnet and that should keep the IP address constant. For a system in production another configuration/solution is needed.
+
 ## using it
 
 To use the application you first need to get the public IP address. There are three possible ways to get it:
