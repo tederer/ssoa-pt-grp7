@@ -9,11 +9,6 @@ var restartPolicy       = 'Always'
 var gitRepoUrl          = 'https://github.com/tederer/ssoa-pt-grp7.git'
 var serviceNames        = ['webserver', 'products', 'orders', 'customers']
 
-resource vnetSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-05-01' existing = {
-  scope: resourceGroup()
-  name: 'vnet/servicesSubnet'
-}
-
 resource appConfig 'Microsoft.AppConfiguration/configurationStores@2022-05-01' existing = {
   scope: resourceGroup()
   name: 'ssoa-config'
@@ -72,7 +67,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2021-10-01'
     restartPolicy: restartPolicy
     subnetIds: [
       {
-        id: vnetSubnet.id
+        id: resourceId('Microsoft.Network/virtualNetworks/subnets', 'vnet', '${serviceName}Subnet')
       }
     ]
     ipAddress: {
