@@ -152,7 +152,7 @@ paths:
                   example: '63a1f71147d02b1048155d06'
                 productId:
                   type: string
-                  example: '334e54wr53'
+                  example: '639b53b1b5cbbc71012f4084'
                 increment:
                   type: number
                   example: -5
